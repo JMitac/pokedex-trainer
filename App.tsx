@@ -5,7 +5,7 @@ import { colors } from '@/ui/tokens';
 export default function App() {
   return (
     <View style={styles.container}>
-      <Text>Vamos papi</Text>
+      <Text>Vamos papi Dx</Text>
       <StatusBar style="auto" />
     </View>
   );

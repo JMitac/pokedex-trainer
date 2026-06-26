@@ -143,7 +143,8 @@ export const colors = {
   skeleton: palette.gray200,
   skeletonHighlight: palette.gray100,
   disabled: palette.gray200,
-  disabledText: palette.gray400,
+  disabledText: palette.gray400, 
+  transparent: palette.transparent,
 
   // --- Pokémon types ---
   pokemonTypes: {
