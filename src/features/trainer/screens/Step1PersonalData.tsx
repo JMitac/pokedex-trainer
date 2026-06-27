@@ -27,6 +27,7 @@ import { useTrainerStore } from '../store/trainerStore';
 import { StepIndicator } from '../components/StepIndicator';
 import type { Step1FormValues } from '../schemas/trainer.schemas';
 import type { TrainerNavigationProp } from '@/app/navigation';
+import { AgeInput } from '../components/AgeInput';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -116,42 +117,15 @@ export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
             <Controller
                 control={control}
                 name="age"
-                render={({ field: { onChange, onBlur, value, ref } }) => {
-                    const [inputText, setInputText] = React.useState(
-                    value !== undefined && !isNaN(value) ? String(value) : ''
-                    );
-
-                    return (
-                    <Input
-                        ref={ref}
-                        label="Edad"
-                        required
-                        placeholder="10"
-                        value={inputText}
-                        onChangeText={(text) => {
-                        // Solo permitir dígitos
-                        const digitsOnly = text.replace(/[^0-9]/g, '');
-                        setInputText(digitsOnly);
-
-                        if (digitsOnly === '') {
-                            onChange(undefined);
-                            return;
-                        }
-                        const num = parseInt(digitsOnly, 10);
-                        if (!isNaN(num)) {
-                            onChange(num);
-                        }
-                        }}
+                render={({ field: { onChange, onBlur, value, ref } }) => (
+                    <AgeInput
+                        inputRef={ref}
+                        value={value}
+                        onChange={onChange}
                         onBlur={onBlur}
                         error={errors.age?.message}
-                        hint="Entre 10 y 99 años"
-                        keyboardType="numeric"
-                        maxLength={2}
-                        returnKeyType="next"
-                        testID="input-age"
                     />
-                    );
-                }}
+                )}
             />
 
             <Controller
