@@ -34,7 +34,7 @@ export const step1Schema = yup.object({
     .required('La edad es requerida')
     .integer('La edad debe ser un número entero')
     .min(10, 'Debes tener al menos 10 años para ser entrenador')
-    .max(120, 'Por favor ingresa una edad válida'),
+    .max(99, 'Ingresa una edad válida (máximo 99 años)'),
 
   email: yup
     .string()

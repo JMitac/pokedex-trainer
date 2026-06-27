@@ -2,63 +2,76 @@
  * @file trainerStore.ts
  * @layer Features / Trainer / Store
  *
- * Store de Zustand para el carnet del Entrenador.
- * Persiste los datos del formulario multi-paso y
- * los distribuye a la pantalla de resumen (TrainerCard).
+ * Store de Zustand con persistencia mediante AsyncStorage.
+ * Los datos del entrenador sobreviven entre sesiones de la app.
  *
- * REGLA: Este es el único store de estado global del Trainer.
- * Las pantallas del formulario leen y escriben aquí.
- * Nunca pasar datos del trainer por parámetros de navegación.
+ * Flujo:
+ * - Al guardar → persiste en AsyncStorage automáticamente
+ * - Al abrir la app → Zustand rehidrata el store desde AsyncStorage
+ * - Al eliminar → borra del store y de AsyncStorage
  */
 
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { TrainerState, TrainerFormData } from '../types/trainer.types';
 
-export const useTrainerStore = create<TrainerState>((set) => ({
-  // ---------------------------------------------------------------------------
-  // Estado inicial
-  // ---------------------------------------------------------------------------
-  trainer: null,
-  isRegistered: false,
+// ---------------------------------------------------------------------------
+// Store con middleware de persistencia
+// ---------------------------------------------------------------------------
 
-  // ---------------------------------------------------------------------------
-  // Acciones
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Guarda los datos completos del entrenador.
-   * Se llama al completar el Step2 del formulario.
-   */
-  saveTrainer: (data: TrainerFormData) =>
-    set({
-      trainer: data,
-      isRegistered: true,
-    }),
-
-  /**
-   * Resetea el store para registrar un nuevo entrenador.
-   * Se llama desde el botón "Nuevo entrenador" en TrainerCard.
-   */
-  resetTrainer: () =>
-    set({
+export const useTrainerStore = create<TrainerState>()(
+  persist(
+    (set) => ({
+      // -----------------------------------------------------------------------
+      // Estado inicial
+      // -----------------------------------------------------------------------
       trainer: null,
       isRegistered: false,
+
+      // -----------------------------------------------------------------------
+      // Acciones
+      // -----------------------------------------------------------------------
+
+      /**
+       * Guarda o actualiza los datos del entrenador.
+       * Se llama al completar el Step2 (registro o edición).
+       * Persiste automáticamente en AsyncStorage.
+       */
+      saveTrainer: (data: TrainerFormData) =>
+        set({
+          trainer: data,
+          isRegistered: true,
+        }),
+
+      /**
+       * Elimina el registro del entrenador.
+       * Se llama desde el modal de confirmación en TrainerCard.
+       * Borra tanto del store como de AsyncStorage.
+       */
+      resetTrainer: () =>
+        set({
+          trainer: null,
+          isRegistered: false,
+        }),
     }),
-}));
+    {
+      name: 'trainer-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      // Solo persistir trainer e isRegistered, no las acciones
+      partialize: (state) => ({
+        trainer: state.trainer,
+        isRegistered: state.isRegistered,
+      }),
+    }
+  )
+);
 
 // ---------------------------------------------------------------------------
-// Selectores — para acceder a partes específicas del store
-// sin re-renders innecesarios
+// Selectores
 // ---------------------------------------------------------------------------
 
-/** Selector para los datos del trainer */
 export const selectTrainer = (state: TrainerState) => state.trainer;
-
-/** Selector para el estado de registro */
 export const selectIsRegistered = (state: TrainerState) => state.isRegistered;
-
-/** Selector para la acción de guardar */
 export const selectSaveTrainer = (state: TrainerState) => state.saveTrainer;
-
-/** Selector para la acción de reset */
 export const selectResetTrainer = (state: TrainerState) => state.resetTrainer;

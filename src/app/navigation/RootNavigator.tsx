@@ -2,22 +2,9 @@
  * @file RootNavigator.tsx
  * @layer App / Navigation
  *
- * Navegador raíz de la aplicación.
- * Punto de entrada de toda la estructura de navegación.
- *
- * Estructura:
- *   RootNavigator
- *   └── TabNavigator
- *       ├── PokedexStack (Tab 1)
- *       │   ├── PokemonListScreen
- *       │   └── PokemonDetailScreen
- *       ├── TrainerStack (Tab 2)
- *       │   ├── Step1PersonalData
- *       │   ├── Step2Preferences
- *       │   └── TrainerCardScreen
- *       └── PlaygroundStack (Tab 3 — solo DEV/QA)
- *           ├── PlaygroundHomeScreen
- *           └── ComponentDetailScreen
+ * Navegador raíz con redirección inteligente.
+ * Si el entrenador ya está registrado (datos en store),
+ * la app abre directamente en TrainerCard en vez del Step1.
  */
 
 import React from 'react';
