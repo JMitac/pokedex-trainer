@@ -1,21 +1,6 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '@/ui/tokens';
+import React from 'react';
+import { RootNavigator } from '@/app/navigation';
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Vamos papi Dx</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
+  return <RootNavigator />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
