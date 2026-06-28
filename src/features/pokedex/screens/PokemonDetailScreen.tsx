@@ -2,8 +2,8 @@
  * @file PokemonDetailScreen.tsx
  * @layer Features / Pokédex / Screens
  *
- * Pantalla de detalle de un Pokémon.
- * Muestra imagen oficial, tipos, estadísticas base y habilidades.
+ * Pantalla de detalle con imagen oficial, tipos, stats,
+ * debilidades y cadena de evolución.
  */
 
 import React from 'react';
@@ -12,10 +12,13 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePokemonDetail } from '../hooks/usePokemon';
+import { usePokemonEvolution } from '../hooks/usePokemonEvolution';
 import { StatBar } from '../components/StatBar';
+import { EvolutionChain } from '../components/EvolutionChain';
 import { TypeBadge } from '@/ui/components/Badge';
 import { PokemonDetailSkeleton } from '@/ui/components/Skeleton';
 import { Heading, Body, Label, Caption } from '@/ui/components/Typography';
@@ -38,6 +41,12 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { id, name } = route.params;
 
   const { data: pokemon, isLoading, isError, refetch } = usePokemonDetail({ id });
+
+  const {
+    evolutionChain,
+    weaknesses,
+    isLoading: isLoadingExtra,
+  } = usePokemonEvolution(pokemon);
 
   // ---------------------------------------------------------------------------
   // Estado de carga
@@ -83,6 +92,14 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       </SafeAreaView>
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Handler de navegación a otro Pokémon desde la cadena de evolución
+  // ---------------------------------------------------------------------------
+
+  const handleEvolutionPress = (evoId: number, evoName: string) => {
+    navigation.push('PokemonDetail', { id: evoId, name: evoName });
+  };
 
   // ---------------------------------------------------------------------------
   // Render principal
@@ -146,6 +163,33 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         </View>
 
+        {/* Debilidades */}
+        <View style={styles.section} testID="detail-weaknesses">
+          <Heading size="sm" style={styles.sectionTitle}>
+            Debilidades
+          </Heading>
+          {isLoadingExtra ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
+              testID="weaknesses-loading"
+            />
+          ) : weaknesses.length > 0 ? (
+            <View style={styles.weaknessesGrid}>
+              {weaknesses.map((type) => (
+                <TypeBadge
+                  key={type}
+                  type={type as PokemonType}
+                  size="sm"
+                  testID={`weakness-${type}`}
+                />
+              ))}
+            </View>
+          ) : (
+            <Caption color="textMuted">Sin debilidades conocidas</Caption>
+          )}
+        </View>
+
         {/* Estadísticas base */}
         <View style={styles.section} testID="detail-stats">
           <Heading size="sm" style={styles.sectionTitle}>
@@ -175,6 +219,27 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               </View>
             ))}
           </View>
+        </View>
+
+        {/* Cadena de evolución */}
+        <View style={styles.section} testID="detail-evolution">
+          <Heading size="sm" style={styles.sectionTitle}>
+            Cadena de Evolución
+          </Heading>
+          {isLoadingExtra ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.primary}
+              testID="evolution-loading"
+            />
+          ) : (
+            <EvolutionChain
+              chain={evolutionChain}
+              currentId={pokemon.id}
+              onPokemonPress={handleEvolutionPress}
+              testID="evolution-chain"
+            />
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -245,6 +310,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: spacing.sm,
+  },
+  weaknessesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
   },
   abilitiesRow: {
     flexDirection: 'row',
