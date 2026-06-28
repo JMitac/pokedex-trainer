@@ -2,9 +2,11 @@
  * @file PokemonListScreen.tsx
  * @layer Features / Pokédex / Screens
  *
- * Pantalla principal del Pokédex.
- * Muestra la lista de Pokémon con scroll infinito,
- * estados de carga (Skeleton) y error.
+ * Pantalla principal del Pokédex con búsqueda integrada.
+ *
+ * Dos modos:
+ * - Normal: lista paginada con scroll infinito
+ * - Búsqueda: resultados filtrados del catálogo completo
  */
 
 import React, { useCallback } from 'react';
@@ -13,11 +15,12 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePokemonInfiniteList, usePrefetchPokemon } from '../hooks/usePokemon';
+import { usePokemonSearch } from '../hooks/usePokemonSearch';
 import { PokemonCard } from '../components/PokemonCard';
+import { SearchBar } from '../components/SearchBar';
 import { PokemonListSkeleton } from '@/ui/components/Skeleton';
 import { Heading, Body } from '@/ui/components/Typography';
 import { Button } from '@/ui/components/Button';
@@ -46,10 +49,22 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
     isFetchingNextPage,
   } = usePokemonInfiniteList();
 
+  const {
+    searchQuery,
+    setSearchQuery,
+    clearSearch,
+    results: searchResults,
+    isSearching,
+    isLoadingCatalog,
+  } = usePokemonSearch();
+
   const prefetchPokemon = usePrefetchPokemon();
 
-  // Aplanar todas las páginas en un solo array
+  // Lista normal aplanada de todas las páginas
   const pokemonList = data?.pages.flatMap((page) => page.items) ?? [];
+
+  // Datos a mostrar según el modo
+  const displayList = isSearching ? searchResults : pokemonList;
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -57,7 +72,6 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePokemonPress = useCallback(
     (pokemon: PokemonListItem) => {
-      // Precarga el detalle antes de navegar
       prefetchPokemon(pokemon.id);
       navigation.navigate('PokemonDetail', {
         id: pokemon.id,
@@ -68,26 +82,34 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const handleEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
+    if (!isSearching && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [isSearching, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // ---------------------------------------------------------------------------
-  // Estados visuales
+  // Estado de carga inicial (solo para la lista normal)
   // ---------------------------------------------------------------------------
 
-  // Estado de carga inicial
-  if (isLoading) {
+  if (isLoading && !isSearching) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          onClear={clearSearch}
+          testID="search-bar"
+        />
         <PokemonListSkeleton count={10} testID="list-skeleton" />
       </SafeAreaView>
     );
   }
 
+  // ---------------------------------------------------------------------------
   // Estado de error
-  if (isError) {
+  // ---------------------------------------------------------------------------
+
+  if (isError && !isSearching) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.centered} testID="error-state">
@@ -110,13 +132,20 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   // ---------------------------------------------------------------------------
+  // Estado vacío en búsqueda
+  // ---------------------------------------------------------------------------
+
+  const showEmptySearch =
+    isSearching && searchResults.length === 0 && !isLoadingCatalog;
+
+  // ---------------------------------------------------------------------------
   // Render principal
   // ---------------------------------------------------------------------------
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <FlatList
-        data={pokemonList}
+        data={displayList}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <PokemonCard
@@ -129,21 +158,42 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.3}
-        // Footer con spinner de carga de siguiente página
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View style={styles.footer} testID="loading-more">
-              <ActivityIndicator
-                size="small"
-                color={colors.primary}
-              />
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        // SearchBar pegado al tope de la lista
+        ListHeaderComponent={
+          <SearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onClear={clearSearch}
+            testID="search-bar"
+          />
+        }
+        // Estado vacío en búsqueda
+        ListEmptyComponent={
+          showEmptySearch ? (
+            <View style={styles.emptySearch} testID="empty-search">
+              <Body align="center" style={styles.emptyEmoji}>
+                🔍
+              </Body>
+              <Heading size="sm" align="center" color="textSecondary">
+                Sin resultados
+              </Heading>
+              <Body align="center" color="textMuted" style={styles.emptyText}>
+                No encontramos ningún Pokémon con "{searchQuery}"
+              </Body>
             </View>
           ) : null
         }
-        // Separador entre cards
-        ItemSeparatorComponent={() => (
-          <View style={styles.separator} />
-        )}
+        // Footer con spinner de carga de siguiente página
+        ListFooterComponent={
+          isFetchingNextPage && !isSearching ? (
+            <View style={styles.footer} testID="loading-more">
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null
+        }
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         testID="pokemon-list"
       />
     </SafeAreaView>
@@ -160,7 +210,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   listContent: {
-    paddingVertical: spacing.xs,
     paddingBottom: spacing.xxl,
   },
   centered: {
@@ -168,6 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
+    marginTop: spacing.xxl,
   },
   errorText: {
     marginTop: spacing.xs,
@@ -182,5 +232,17 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: spacing.xxs,
+  },
+  emptySearch: {
+    alignItems: 'center',
+    paddingTop: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: spacing.md,
+  },
+  emptyText: {
+    marginTop: spacing.xs,
   },
 });
