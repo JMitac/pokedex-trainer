@@ -2,38 +2,26 @@
  * @file TrainerCardScreen.tsx
  * @layer Features / Trainer / Screens
  *
- * Pantalla del carnet del Entrenador.
- * Lee del store de Zustand (persistido en AsyncStorage).
- *
- * Acciones disponibles:
- * - Editar perfil → vuelve al Step1 con campos pre-llenados
- * - Eliminar registro → modal de confirmación → resetTrainer()
+ * Carnet del entrenador con foto de perfil editable y lema.
+ * El ícono de lápiz solo aparece cuando el entrenador está registrado.
  */
 
 import React, { useState } from 'react';
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTrainerStore } from '../store/trainerStore';
+import { ProfilePhoto } from '../components/ProfilePhoto';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Badge } from '@/ui/components/Badge';
 import { Button } from '@/ui/components/Button';
 import { Card } from '@/ui/components/Card';
-import {
-  Heading,
-  Body,
-  Label,
-  Caption,
-} from '@/ui/components/Typography';
+import { Heading, Body, Label, Caption } from '@/ui/components/Typography';
 import { colors, spacing, borderRadius } from '@/ui/tokens';
 import type { PokemonType } from '@/ui/tokens';
 import type { TrainerNavigationProp } from '@/app/navigation';
 
 // ---------------------------------------------------------------------------
-// Mapa tipo favorito → PokemonType del catálogo
+// Mapa tipo favorito → PokemonType
 // ---------------------------------------------------------------------------
 
 const TYPE_MAP: Record<string, PokemonType> = {
@@ -54,6 +42,8 @@ type Props = TrainerNavigationProp<'TrainerCard'>;
 
 export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
   const trainer = useTrainerStore((state) => state.trainer);
+  const profilePhotoUri = useTrainerStore((state) => state.profilePhotoUri);
+  const saveProfilePhoto = useTrainerStore((state) => state.saveProfilePhoto);
   const resetTrainer = useTrainerStore((state) => state.resetTrainer);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -62,10 +52,7 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
   // Handlers
   // ---------------------------------------------------------------------------
 
-  const handleEdit = () => {
-    // Navega al Step1 — los datos pre-llenados se pasan como params
-    navigation.navigate('Step1PersonalData');
-  };
+  const handleEdit = () => navigation.navigate('Step1PersonalData');
 
   const handleDeleteConfirm = () => {
     setShowDeleteModal(false);
@@ -122,18 +109,18 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         {/* Tarjeta principal */}
-        <Card
-          variant="elevated"
-          style={styles.card}
-          testID="trainer-card"
-        >
-          {/* Insignia */}
-          <View style={styles.badgeContainer}>
-            <View style={styles.trainerBadge} testID="trainer-badge">
-              <Heading size="xl" align="center" style={styles.badgeEmoji}>
-                🎒
-              </Heading>
-            </View>
+        <Card variant="elevated" style={styles.card} testID="trainer-card">
+
+          {/* Foto de perfil con lápiz */}
+          <View style={styles.photoSection}>
+            <ProfilePhoto
+              photoUri={profilePhotoUri}
+              showEditButton={true}
+              onPhotoSelected={saveProfilePhoto}
+              testID="profile-photo"
+            />
+
+            {/* Badge de entrenador */}
             <Badge
               label="ENTRENADOR POKÉMON"
               variant="success"
@@ -146,9 +133,7 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
           <Card.Body>
             {/* Nombre */}
             <View style={styles.dataRow} testID="card-fullname-row">
-              <Label color="textSecondary" style={styles.dataLabel}>
-                Nombre
-              </Label>
+              <Label color="textSecondary" style={styles.dataLabel}>Nombre</Label>
               <Body style={styles.dataValue} testID="card-fullname">
                 {trainer.fullName}
               </Body>
@@ -156,11 +141,25 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
+            {/* Lema — solo si existe */}
+            {trainer.motto ? (
+              <>
+                <View style={styles.mottoRow} testID="card-motto-row">
+                  <Caption
+                    color="textSecondary"
+                    style={styles.mottoText}
+                    testID="card-motto"
+                  >
+                    "{trainer.motto}"
+                  </Caption>
+                </View>
+                <View style={styles.divider} />
+              </>
+            ) : null}
+
             {/* Edad */}
             <View style={styles.dataRow} testID="card-age-row">
-              <Label color="textSecondary" style={styles.dataLabel}>
-                Edad
-              </Label>
+              <Label color="textSecondary" style={styles.dataLabel}>Edad</Label>
               <Body testID="card-age">{trainer.age} años</Body>
             </View>
 
@@ -168,9 +167,7 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
 
             {/* Email */}
             <View style={styles.dataRow} testID="card-email-row">
-              <Label color="textSecondary" style={styles.dataLabel}>
-                Correo
-              </Label>
+              <Label color="textSecondary" style={styles.dataLabel}>Correo</Label>
               <Body
                 size="sm"
                 numberOfLines={1}
@@ -185,9 +182,7 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
 
             {/* Distrito */}
             <View style={styles.dataRow} testID="card-district-row">
-              <Label color="textSecondary" style={styles.dataLabel}>
-                Distrito
-              </Label>
+              <Label color="textSecondary" style={styles.dataLabel}>Distrito</Label>
               <Body testID="card-district">{trainer.district}</Body>
             </View>
 
@@ -230,7 +225,7 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Modal de confirmación de eliminación */}
+      {/* Modal de confirmación */}
       <ConfirmModal
         visible={showDeleteModal}
         title="¿Eliminar tu carnet?"
@@ -267,24 +262,22 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: spacing.md,
   },
-  badgeContainer: {
+  photoSection: {
     alignItems: 'center',
     marginBottom: spacing.lg,
     gap: spacing.xs,
   },
-  trainerBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeEmoji: {
-    fontSize: 36,
-  },
   registeredBadge: {
     alignSelf: 'center',
+  },
+  mottoRow: {
+    paddingVertical: spacing.xs,
+    alignItems: 'center',
+  },
+  mottoText: {
+    fontStyle: 'italic',
+    textAlign: 'center',
+    color: colors.textSecondary,
   },
   dataRow: {
     flexDirection: 'row',

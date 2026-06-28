@@ -2,32 +2,31 @@
  * @file Step1PersonalData.tsx
  * @layer Features / Trainer / Screens
  *
- * Paso 1 del formulario — Datos Personales.
- * Funciona tanto para registro nuevo como para edición.
- * Si hay datos en el store, los campos aparecen pre-llenados.
+ * Paso 1 — Datos Personales.
+ * Incluye el campo opcional de lema del entrenador.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, SubmitHandler, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Input } from '@/ui/components/Input';
 import { Button } from '@/ui/components/Button';
-import { Heading, Body } from '@/ui/components/Typography';
+import { Heading, Body, Caption } from '@/ui/components/Typography';
 import { colors, spacing } from '@/ui/tokens';
 import { step1Schema } from '../schemas/trainer.schemas';
 import { useTrainerStore } from '../store/trainerStore';
 import { StepIndicator } from '../components/StepIndicator';
 import type { Step1FormValues } from '../schemas/trainer.schemas';
 import type { TrainerNavigationProp } from '@/app/navigation';
-import { AgeInput } from '../components/AgeInput';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -36,30 +35,83 @@ import { AgeInput } from '../components/AgeInput';
 type Props = TrainerNavigationProp<'Step1PersonalData'>;
 
 // ---------------------------------------------------------------------------
-// Componente
+// Sub-componente AgeInput (evita useState en render prop)
+// ---------------------------------------------------------------------------
+
+interface AgeInputProps {
+  value: number | undefined;
+  onChange: (value: number | undefined) => void;
+  onBlur: () => void;
+  error?: string;
+  inputRef: React.Ref<TextInput>;
+}
+
+const AgeInput: React.FC<AgeInputProps> = ({
+  value,
+  onChange,
+  onBlur,
+  error,
+  inputRef,
+}) => {
+  const [inputText, setInputText] = useState(
+    value !== undefined && !isNaN(value) ? String(value) : ''
+  );
+
+  return (
+    <Input
+      ref={inputRef}
+      label="Edad"
+      required
+      placeholder="10"
+      value={inputText}
+      onChangeText={(text) => {
+        const digitsOnly = text.replace(/[^0-9]/g, '');
+        setInputText(digitsOnly);
+        if (digitsOnly === '') {
+          onChange(undefined);
+          return;
+        }
+        const num = parseInt(digitsOnly, 10);
+        if (!isNaN(num)) onChange(num);
+      }}
+      onBlur={onBlur}
+      error={error}
+      hint="Entre 10 y 99 años"
+      keyboardType="numeric"
+      maxLength={2}
+      returnKeyType="next"
+      testID="input-age"
+    />
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Componente principal
 // ---------------------------------------------------------------------------
 
 export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
-  // Si hay datos en el store, es modo edición
   const trainer = useTrainerStore((state) => state.trainer);
   const isEditing = trainer !== null;
 
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors, isValid },
   } = useForm<Step1FormValues>({
-    resolver: yupResolver(step1Schema),
+    resolver: yupResolver(step1Schema) as unknown as Resolver<Step1FormValues>,
     mode: 'onChange',
-    // Pre-llenar con datos existentes si estamos editando
     defaultValues: {
       fullName: trainer?.fullName ?? '',
       age: trainer?.age ?? undefined,
       email: trainer?.email ?? '',
+      motto: trainer?.motto ?? '',
     },
   });
 
-  const onSubmit = (data: Step1FormValues) => {
+  const mottoValue = watch('motto') ?? '';
+
+  const onSubmit: SubmitHandler<Step1FormValues> = (data) => {
     navigation.navigate('Step2Preferences', data as never);
   };
 
@@ -69,11 +121,7 @@ export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <StepIndicator
-          currentStep={1}
-          totalSteps={2}
-          testID="step-indicator"
-        />
+        <StepIndicator currentStep={1} totalSteps={2} testID="step-indicator" />
 
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -92,6 +140,7 @@ export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <View style={styles.form}>
+            {/* Nombre completo */}
             <Controller
               control={control}
               name="fullName"
@@ -114,20 +163,22 @@ export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
               )}
             />
 
+            {/* Edad */}
             <Controller
-                control={control}
-                name="age"
-                render={({ field: { onChange, onBlur, value, ref } }) => (
-                    <AgeInput
-                        inputRef={ref}
-                        value={value}
-                        onChange={onChange}
-                        onBlur={onBlur}
-                        error={errors.age?.message}
-                    />
-                )}
+              control={control}
+              name="age"
+              render={({ field: { onChange, onBlur, value, ref } }) => (
+                <AgeInput
+                  inputRef={ref}
+                  value={value}
+                  onChange={onChange}
+                  onBlur={onBlur}
+                  error={errors.age?.message}
+                />
+              )}
             />
 
+            {/* Correo electrónico */}
             <Controller
               control={control}
               name="email"
@@ -144,9 +195,40 @@ export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
-                  returnKeyType="done"
+                  returnKeyType="next"
                   testID="input-email"
                 />
+              )}
+            />
+
+            {/* Lema del entrenador — opcional */}
+            <Controller
+              control={control}
+              name="motto"
+              render={({ field: { onChange, onBlur, value, ref } }) => (
+                <View>
+                  <Input
+                    ref={ref}
+                    label="Lema de entrenador"
+                    placeholder="¡Voy a ser el mejor!"
+                    value={value ?? ''}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    error={errors.motto?.message}
+                    hint="Opcional · Aparecerá en tu carnet"
+                    autoCapitalize="sentences"
+                    maxLength={60}
+                    returnKeyType="done"
+                    testID="input-motto"
+                  />
+                  {/* Contador de caracteres */}
+                  <Caption
+                    color={mottoValue.length >= 55 ? 'error' : 'textMuted'}
+                    style={styles.charCount}
+                  >
+                    {mottoValue.length}/60
+                  </Caption>
+                </View>
               )}
             />
           </View>
@@ -172,6 +254,10 @@ export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
   );
 };
 
+// ---------------------------------------------------------------------------
+// Estilos
+// ---------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -192,6 +278,10 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing.md,
+  },
+  charCount: {
+    textAlign: 'right',
+    marginTop: spacing.xxxs,
   },
   footer: {
     padding: spacing.md,

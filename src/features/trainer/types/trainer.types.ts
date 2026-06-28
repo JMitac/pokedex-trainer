@@ -1,13 +1,7 @@
 /**
  * @file trainer.types.ts
  * @layer Features / Trainer / Types
- *
- * Modelos de dominio para el registro del Entrenador.
  */
-
-// ---------------------------------------------------------------------------
-// Opciones del formulario
-// ---------------------------------------------------------------------------
 
 export const DISTRICTS = [
   'Ate',
@@ -26,14 +20,12 @@ export const POKEMON_TYPES = [
 export type District = typeof DISTRICTS[number];
 export type FavoritePokemonType = typeof POKEMON_TYPES[number];
 
-// ---------------------------------------------------------------------------
-// Datos del formulario por paso
-// ---------------------------------------------------------------------------
-
 export interface Step1Data {
   fullName: string;
   age: number;
   email: string;
+  /** Lema personal del entrenador — opcional */
+  motto?: string;
 }
 
 export interface Step2Data {
@@ -41,26 +33,14 @@ export interface Step2Data {
   favoritePokemonType: FavoritePokemonType;
 }
 
-// ---------------------------------------------------------------------------
-// Datos completos del Trainer (unión de pasos)
-// ---------------------------------------------------------------------------
-
 export interface TrainerFormData extends Step1Data, Step2Data {}
 
-// ---------------------------------------------------------------------------
-// Estado del store de Zustand
-// ---------------------------------------------------------------------------
-
 export interface TrainerState {
-  /** Datos del entrenador guardados al completar el formulario */
   trainer: TrainerFormData | null;
-
-  /** Indica si el carnet ha sido completado */
+  /** URI local de la foto de perfil del entrenador */
+  profilePhotoUri: string | null;
   isRegistered: boolean;
-
-  /** Guarda los datos del entrenador en el store */
   saveTrainer: (data: TrainerFormData) => void;
-
-  /** Resetea el store para registrar un nuevo entrenador */
+  saveProfilePhoto: (uri: string) => void;
   resetTrainer: () => void;
 }
