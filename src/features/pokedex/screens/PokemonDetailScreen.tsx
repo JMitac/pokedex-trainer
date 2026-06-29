@@ -2,30 +2,117 @@
  * @file PokemonDetailScreen.tsx
  * @layer Features / Pokédex / Screens
  *
- * Pantalla de detalle con imagen oficial, tipos, stats,
- * debilidades y cadena de evolución.
+ * Detalle de Pokémon con diseño retro pixel art.
+ * Incluye botón Capturar/Capturado, debilidades con x2,
+ * stats segmentadas y cadena de evolución en modal.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Image,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Text,
+  Pressable,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/app/providers/ThemeContext';
 import { usePokemonDetail } from '../hooks/usePokemon';
 import { usePokemonEvolution } from '../hooks/usePokemonEvolution';
-import { StatBar } from '../components/StatBar';
 import { EvolutionChain } from '../components/EvolutionChain';
 import { TypeBadge } from '@/ui/components/Badge';
 import { PokemonDetailSkeleton } from '@/ui/components/Skeleton';
-import { Heading, Body, Label, Caption } from '@/ui/components/Typography';
-import { Button } from '@/ui/components/Button';
-import { colors, spacing } from '@/ui/tokens';
+import { spacing, textStyles } from '@/ui/tokens';
 import type { PokemonType } from '@/ui/tokens';
 import type { PokedexNavigationProp } from '@/app/navigation';
+
+// Colores de fondo por tipo para el header
+const TYPE_BG_COLORS: Record<string, [string, string]> = {
+  grass:    ['#A8D8A8', '#C8B8E8'],
+  fire:     ['#FFB8A8', '#FFD8B8'],
+  water:    ['#A8C8FF', '#C8D8FF'],
+  electric: ['#FFE888', '#FFEF98'],
+  psychic:  ['#FFB8D8', '#FFD8E8'],
+  ice:      ['#C8F0F0', '#D8F8F8'],
+  dragon:   ['#9898E8', '#B8B8FF'],
+  dark:     ['#888898', '#A8A8B8'],
+  fairy:    ['#FFD8E8', '#FFE8F8'],
+  normal:   ['#C8C8B8', '#D8D8C8'],
+  fighting: ['#E8A8C8', '#F8C8E8'],
+  flying:   ['#C8D8F8', '#D8E8FF'],
+  poison:   ['#C8A8E8', '#D8C8F8'],
+  ground:   ['#E8D8A8', '#F8E8C8'],
+  rock:     ['#C8B898', '#D8C8A8'],
+  bug:      ['#C8D898', '#D8E8A8'],
+  ghost:    ['#A8A8C8', '#B8B8D8'],
+  steel:    ['#C8D0D8', '#D8E0E8'],
+};
+
+// Colores segmentados de stats
+const getStatColor = (value: number): string => {
+  if (value >= 100) return '#44AA44';
+  if (value >= 60) return '#DDAA00';
+  return '#CC3333';
+};
+
+// ---------------------------------------------------------------------------
+// Componente: StatBar segmentada estilo retro
+// ---------------------------------------------------------------------------
+
+const RetroStatBar: React.FC<{ label: string; value: number; colors: any }> = ({
+  label, value, colors,
+}) => {
+  const MAX = 15; // Número de segmentos
+  const filled = Math.round((value / 255) * MAX);
+  const statColor = getStatColor(value);
+
+  return (
+    <View style={statStyles.row}>
+      <Text style={[textStyles.labelSM, { color: colors.textSecondary, width: 68, textAlign: 'right' }]}>
+        {label}
+      </Text>
+      <Text style={[textStyles.statValue, { color: colors.textPrimary, width: 32, textAlign: 'right', marginHorizontal: 6 }]}>
+        {value}
+      </Text>
+      <View style={statStyles.barContainer}>
+        {Array.from({ length: MAX }).map((_, i) => (
+          <View
+            key={i}
+            style={[
+              statStyles.segment,
+              {
+                backgroundColor: i < filled ? statColor : colors.surfaceMuted,
+                borderColor: colors.border,
+              },
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+};
+
+const statStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 3,
+  },
+  barContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 2,
+  },
+  segment: {
+    flex: 1,
+    height: 14,
+    borderWidth: 1,
+  },
+});
 
 // ---------------------------------------------------------------------------
 // Props
@@ -34,214 +121,242 @@ import type { PokedexNavigationProp } from '@/app/navigation';
 type Props = PokedexNavigationProp<'PokemonDetail'>;
 
 // ---------------------------------------------------------------------------
-// Componente
+// Componente principal
 // ---------------------------------------------------------------------------
 
 export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { id, name } = route.params;
+  const { colors } = useTheme();
+  const [isCaptured, setIsCaptured] = useState(false);
+  const [showEvolution, setShowEvolution] = useState(false);
 
   const { data: pokemon, isLoading, isError, refetch } = usePokemonDetail({ id });
-
-  const {
-    evolutionChain,
-    weaknesses,
-    isLoading: isLoadingExtra,
-  } = usePokemonEvolution(pokemon);
-
-  // ---------------------------------------------------------------------------
-  // Estado de carga
-  // ---------------------------------------------------------------------------
+  const { evolutionChain, weaknesses, isLoading: isLoadingExtra } = usePokemonEvolution(pokemon);
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
         <PokemonDetailSkeleton testID="detail-skeleton" />
       </SafeAreaView>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Estado de error
-  // ---------------------------------------------------------------------------
-
   if (isError || !pokemon) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={styles.centered} testID="detail-error">
-          <Heading size="md" align="center" color="textSecondary">
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+        <View style={styles.centered}>
+          <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
             No encontramos a {name}
-          </Heading>
-          <Body align="center" color="textMuted" style={styles.errorText}>
-            Hubo un problema al cargar los datos del Pokémon.
-          </Body>
-          <Button
-            label="Reintentar"
-            variant="primary"
+          </Text>
+          <Pressable
             onPress={() => refetch()}
-            testID="detail-retry-button"
-            style={styles.retryButton}
-          />
-          <Button
-            label="Volver al Pokédex"
-            variant="ghost"
+            style={[styles.actionBtn, { backgroundColor: colors.primary, borderColor: colors.border }]}
+          >
+            <Text style={[textStyles.labelMD, { color: colors.textInverse }]}>Reintentar</Text>
+          </Pressable>
+          <Pressable
             onPress={() => navigation.goBack()}
-            testID="detail-back-button"
-            style={styles.backButton}
-          />
+            style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.xs }]}
+          >
+            <Text style={[textStyles.labelMD, { color: colors.textPrimary }]}>Volver</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Handler de navegación a otro Pokémon desde la cadena de evolución
-  // ---------------------------------------------------------------------------
-
-  const handleEvolutionPress = (evoId: number, evoName: string) => {
-    navigation.push('PokemonDetail', { id: evoId, name: evoName });
-  };
-
-  // ---------------------------------------------------------------------------
-  // Render principal
-  // ---------------------------------------------------------------------------
+  const primaryType = pokemon.types[0] ?? 'normal';
+  const bgColors = TYPE_BG_COLORS[primaryType] ?? ['#C8C8B8', '#D8D8C8'];
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        testID="detail-scroll"
-      >
-        {/* Imagen oficial */}
-        <View style={styles.imageContainer} testID="detail-image-container">
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+      <ScrollView showsVerticalScrollIndicator={false} testID="detail-scroll">
+
+        {/* Header con gradiente del tipo */}
+        <LinearGradient
+          colors={bgColors}
+          style={styles.headerGradient}
+          testID="detail-image-container"
+        >
+          {/* Número grande en el fondo */}
+          <Text style={styles.bgNumber}>
+            #{String(pokemon.id).padStart(4, '0')}
+          </Text>
           <Image
-            source={{ uri: pokemon.officialArtwork }}
-            style={styles.image}
+            source={{ uri: pokemon.sprite }}
+            style={styles.sprite}
             resizeMode="contain"
-            accessibilityLabel={`Artwork oficial de ${pokemon.name}`}
             testID="detail-image"
           />
-        </View>
+        </LinearGradient>
 
-        {/* Número y nombre */}
-        <View style={styles.header} testID="detail-header">
-          <Caption testID="detail-number">
+        {/* Contenido */}
+        <View style={[styles.content, { backgroundColor: colors.background }]}>
+
+          {/* Número y nombre */}
+          <Text style={[textStyles.pokemonNumber, { color: colors.textSecondary, textAlign: 'center', marginBottom: 4 }]} testID="detail-number">
             #{String(pokemon.id).padStart(4, '0')}
-          </Caption>
-          <Heading
-            size="xl"
-            align="center"
-            style={styles.pokemonName}
-            testID="detail-name"
-          >
+          </Text>
+          <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center', textTransform: 'capitalize' }]} testID="detail-name">
             {pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}
-          </Heading>
-        </View>
+          </Text>
 
-        {/* Tipos */}
-        <View style={styles.typesRow} testID="detail-types">
-          {pokemon.types.map((type) => (
-            <TypeBadge
-              key={type}
-              type={type as PokemonType}
-              size="lg"
-              testID={`detail-type-${type}`}
-            />
-          ))}
-        </View>
-
-        {/* Medidas */}
-        <View style={styles.measureRow} testID="detail-measures">
-          <View style={styles.measureItem}>
-            <Label color="textSecondary">Altura</Label>
-            <Body testID="detail-height">{pokemon.heightM} m</Body>
-          </View>
-          <View style={styles.measureDivider} />
-          <View style={styles.measureItem}>
-            <Label color="textSecondary">Peso</Label>
-            <Body testID="detail-weight">{pokemon.weightKg} kg</Body>
-          </View>
-        </View>
-
-        {/* Debilidades */}
-        <View style={styles.section} testID="detail-weaknesses">
-          <Heading size="sm" style={styles.sectionTitle}>
-            Debilidades
-          </Heading>
-          {isLoadingExtra ? (
-            <ActivityIndicator
-              size="small"
-              color={colors.primary}
-              testID="weaknesses-loading"
-            />
-          ) : weaknesses.length > 0 ? (
-            <View style={styles.weaknessesGrid}>
-              {weaknesses.map((type) => (
-                <TypeBadge
-                  key={type}
-                  type={type as PokemonType}
-                  size="sm"
-                  testID={`weakness-${type}`}
-                />
-              ))}
-            </View>
-          ) : (
-            <Caption color="textMuted">Sin debilidades conocidas</Caption>
-          )}
-        </View>
-
-        {/* Estadísticas base */}
-        <View style={styles.section} testID="detail-stats">
-          <Heading size="sm" style={styles.sectionTitle}>
-            Estadísticas Base
-          </Heading>
-          {pokemon.stats.map((stat) => (
-            <StatBar
-              key={stat.name}
-              label={stat.label}
-              value={stat.value}
-              testID={`detail-stat-${stat.name}`}
-            />
-          ))}
-        </View>
-
-        {/* Habilidades */}
-        <View style={styles.section} testID="detail-abilities">
-          <Heading size="sm" style={styles.sectionTitle}>
-            Habilidades
-          </Heading>
-          <View style={styles.abilitiesRow}>
-            {pokemon.abilities.map((ability) => (
-              <View key={ability} style={styles.abilityChip}>
-                <Body size="sm" style={styles.abilityText}>
-                  {ability.replace('-', ' ')}
-                </Body>
-              </View>
+          {/* Tipos */}
+          <View style={styles.typesRow} testID="detail-types">
+            {pokemon.types.map((type) => (
+              <TypeBadge
+                key={type}
+                type={type as PokemonType}
+                size="lg"
+                testID={`detail-type-${type}`}
+              />
             ))}
           </View>
-        </View>
 
-        {/* Cadena de evolución */}
-        <View style={styles.section} testID="detail-evolution">
-          <Heading size="sm" style={styles.sectionTitle}>
-            Cadena de Evolución
-          </Heading>
-          {isLoadingExtra ? (
-            <ActivityIndicator
-              size="small"
-              color={colors.primary}
-              testID="evolution-loading"
-            />
-          ) : (
-            <EvolutionChain
-              chain={evolutionChain}
-              currentId={pokemon.id}
-              onPokemonPress={handleEvolutionPress}
-              testID="evolution-chain"
-            />
-          )}
+          {/* Botón Capturar / Capturado */}
+          <Pressable
+            onPress={() => setIsCaptured(!isCaptured)}
+            style={[
+              styles.captureBtn,
+              {
+                backgroundColor: isCaptured ? colors.surfaceMuted : '#44AA44',
+                borderColor: colors.border,
+              },
+            ]}
+            testID="capture-btn"
+          >
+            <Text style={styles.captureBtnText}>
+              ⊙ {isCaptured ? 'Capturado' : 'Capturar'}
+            </Text>
+          </Pressable>
+
+          {/* Medidas */}
+          <View style={styles.measuresRow} testID="detail-measures">
+            <View style={[styles.measureBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[textStyles.labelSM, { color: colors.textSecondary }]}>Altura</Text>
+              <Text style={[textStyles.bodyLG, { color: colors.textPrimary }]} testID="detail-height">
+                {pokemon.heightM} m
+              </Text>
+            </View>
+            <View style={[styles.measureBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[textStyles.labelSM, { color: colors.textSecondary }]}>Peso</Text>
+              <Text style={[textStyles.bodyLG, { color: colors.textPrimary }]} testID="detail-weight">
+                {pokemon.weightKg} kg
+              </Text>
+            </View>
+          </View>
+
+          {/* Debilidades */}
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]} testID="detail-weaknesses">
+            <Text style={[textStyles.headingSM, { color: colors.textPrimary, marginBottom: spacing.sm }]}>
+              Debilidades
+            </Text>
+            {isLoadingExtra ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : weaknesses.length > 0 ? (
+              <View style={styles.weakGrid}>
+                {weaknesses.map((type) => (
+                  <View key={type} style={styles.weakBadgeWrapper}>
+                    <TypeBadge type={type as PokemonType} size="sm" testID={`weakness-${type}`} />
+                    <Text style={[textStyles.caption, { color: colors.textInverse, marginLeft: 2 }]}>x2</Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={[textStyles.bodyMD, { color: colors.textMuted }]}>Sin debilidades</Text>
+            )}
+          </View>
+
+          {/* Stats */}
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]} testID="detail-stats">
+            <Text style={[textStyles.headingSM, { color: colors.textPrimary, marginBottom: spacing.sm }]}>
+              Estadísticas Base
+            </Text>
+            {pokemon.stats.map((stat) => (
+              <RetroStatBar
+                key={stat.name}
+                label={stat.label}
+                value={stat.value}
+                colors={colors}
+              />
+            ))}
+          </View>
+
+          {/* Habilidades */}
+          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]} testID="detail-abilities">
+            <Text style={[textStyles.headingSM, { color: colors.textPrimary, marginBottom: spacing.sm }]}>
+              Habilidades
+            </Text>
+            <View style={styles.abilitiesRow}>
+              {pokemon.abilities.map((ability) => (
+                <View key={ability} style={[styles.abilityChip, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <Text style={[textStyles.bodyMD, { color: colors.textPrimary, textTransform: 'capitalize' }]}>
+                    {ability.replace('-', ' ')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Cadena de evolución — botón que abre modal */}
+          <Pressable
+            onPress={() => setShowEvolution(true)}
+            style={[styles.evolutionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            testID="evolution-btn"
+          >
+            <Text style={styles.evolutionEmoji}>🧬</Text>
+            <Text style={[textStyles.headingSM, { color: colors.textPrimary, flex: 1 }]}>
+              Cadena de Evolución
+            </Text>
+            <Text style={[textStyles.bodyLG, { color: colors.textMuted }]}>▶</Text>
+          </Pressable>
         </View>
       </ScrollView>
+
+      {/* Modal Cadena de Evolución */}
+      <Modal
+        visible={showEvolution}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEvolution(false)}
+        testID="evolution-modal"
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowEvolution(false)}
+        >
+          <Pressable
+            style={[styles.evolutionPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* Header del modal */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.evolutionEmoji}>🧬</Text>
+              <Text style={[textStyles.headingSM, { color: colors.textPrimary, flex: 1 }]}>
+                Cadena de Evolución
+              </Text>
+              <Pressable onPress={() => setShowEvolution(false)} testID="evolution-modal-close">
+                <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>✕</Text>
+              </Pressable>
+            </View>
+
+            {/* Contenido */}
+            {isLoadingExtra ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: spacing.lg }} />
+            ) : (
+              <EvolutionChain
+                chain={evolutionChain}
+                currentId={pokemon.id}
+                onPokemonPress={(evoId, evoName) => {
+                  setShowEvolution(false);
+                  navigation.push('PokemonDetail', { id: evoId, name: evoName });
+                }}
+                testID="evolution-chain"
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -251,70 +366,68 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xxl,
-  },
-  imageContainer: {
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    paddingVertical: spacing.xl,
-  },
-  image: {
-    width: 220,
+  container: { flex: 1 },
+  headerGradient: {
     height: 220,
-  },
-  header: {
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  pokemonName: {
-    textTransform: 'capitalize',
-    marginTop: spacing.xxs,
+  bgNumber: {
+    position: 'absolute',
+    fontSize: 80,
+    fontFamily: 'PressStart2P_400Regular',
+    color: 'rgba(255,255,255,0.3)',
+    letterSpacing: 2,
+  },
+  sprite: {
+    width: 140,
+    height: 140,
+  },
+  content: {
+    padding: spacing.md,
+    gap: spacing.sm,
   },
   typesRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.xs,
-    marginBottom: spacing.md,
+    marginVertical: spacing.xs,
   },
-  measureRow: {
+  captureBtn: {
+    paddingVertical: spacing.sm,
+    borderWidth: 2,
+    alignItems: 'center',
+    marginVertical: spacing.xs,
+  },
+  captureBtnText: {
+    fontFamily: 'PressStart2P_400Regular',
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  measuresRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.md,
-    borderRadius: 12,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+    gap: spacing.sm,
   },
-  measureItem: {
+  measureBox: {
     flex: 1,
+    padding: spacing.md,
+    borderWidth: 2,
     alignItems: 'center',
-    gap: spacing.xxxs,
-  },
-  measureDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: colors.border,
+    gap: 4,
   },
   section: {
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.md,
-    borderRadius: 12,
     padding: spacing.md,
-    marginBottom: spacing.md,
+    borderWidth: 2,
   },
-  sectionTitle: {
-    marginBottom: spacing.sm,
-  },
-  weaknessesGrid: {
+  weakGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
+  },
+  weakBadgeWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   abilitiesRow: {
     flexDirection: 'row',
@@ -322,29 +435,50 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   abilityChip: {
-    backgroundColor: colors.surfaceMuted,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
-    borderRadius: 20,
+    borderWidth: 2,
   },
-  abilityText: {
-    textTransform: 'capitalize',
+  evolutionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderWidth: 2,
+    gap: spacing.xs,
+  },
+  evolutionEmoji: {
+    fontSize: 18,
+    marginRight: spacing.xxs,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
+    marginTop: 100,
   },
-  errorText: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
+  actionBtn: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xs,
+    borderWidth: 2,
+    marginTop: spacing.md,
   },
-  retryButton: {
-    minWidth: 160,
-    marginBottom: spacing.xs,
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
   },
-  backButton: {
-    minWidth: 160,
+  evolutionPanel: {
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
 });

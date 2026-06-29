@@ -2,73 +2,46 @@
  * @file typography.ts
  * @layer UI / Tokens
  *
- * Sistema tipográfico de la aplicación.
- * Define la escala de tamaños, pesos, alturas de línea
- * y estilos de texto predefinidos listos para usar.
+ * Sistema tipográfico retro Pokémon.
  *
- * REGLA: No usar fontSize, fontWeight o lineHeight sueltos
- * en componentes. Siempre usar los estilos predefinidos de
- * `textStyles` o los tokens individuales de esta escala.
+ * Press Start 2P — títulos, nombres, números, encabezados
+ * VT323           — cuerpo, valores, texto secundario
+ *
+ * IMPORTANTE: Las fuentes se cargan con useFonts() en App.tsx
+ * antes de renderizar la navegación.
  */
 
-import { Platform, TextStyle } from 'react-native';
+import { TextStyle } from 'react-native';
 
 // ---------------------------------------------------------------------------
 // Familias tipográficas
-// React Native usa las fuentes del sistema por plataforma por defecto.
-// Si se integra una fuente custom, se reemplaza aquí y se propaga sola.
 // ---------------------------------------------------------------------------
 
 export const fontFamily = {
-  /**
-   * Fuente principal — San Francisco en iOS, Roboto en Android.
-   * undefined en RN significa "fuente del sistema", que es lo correcto.
-   */
-  regular: Platform.select({
-    ios: undefined,
-    android: undefined,
-  }),
+  /** Fuente pixelada 8-bit — títulos y elementos destacados */
+  pixel: 'PressStart2P_400Regular',
 
-  /**
-   * Fuente monoespaciada — para IDs de Pokémon, códigos, etc.
-   */
-  mono: Platform.select({
-    ios: 'Courier New',
-    android: 'monospace',
-  }),
+  /** Fuente monoespaciada retro — texto de cuerpo y valores */
+  mono: 'VT323_400Regular',
+
+  /** Fallback del sistema */
+  system: undefined,
 } as const;
 
 // ---------------------------------------------------------------------------
-// Escala de tamaños — basada en escala tipográfica modular
+// Escala de tamaños
 // ---------------------------------------------------------------------------
 
 export const fontSize = {
-  /** 10px — etiquetas muy pequeñas, superíndices */
-  xxs: 10,
-
-  /** 12px — captions, ayudas de formulario, metadatos */
-  xs: 12,
-
-  /** 14px — texto de apoyo, labels de campos, badges */
-  sm: 14,
-
-  /** 16px — cuerpo de texto principal */
-  md: 16,
-
-  /** 18px — texto destacado, subtítulos */
-  lg: 18,
-
-  /** 20px — títulos de sección */
-  xl: 20,
-
-  /** 24px — títulos de pantalla */
-  xxl: 24,
-
-  /** 28px — nombre del Pokémon en detalle */
-  xxxl: 28,
-
-  /** 36px — números grandes (stats, número de Pokémon) */
-  display: 36,
+  xxs: 8,
+  xs: 10,
+  sm: 12,
+  md: 14,
+  lg: 16,
+  xl: 18,
+  xxl: 22,
+  xxxl: 26,
+  display: 32,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -80,131 +53,127 @@ export const fontWeight = {
   medium: '500' as TextStyle['fontWeight'],
   semibold: '600' as TextStyle['fontWeight'],
   bold: '700' as TextStyle['fontWeight'],
-  extrabold: '800' as TextStyle['fontWeight'],
 } as const;
 
 // ---------------------------------------------------------------------------
-// Altura de línea — valores que respiran bien en mobile
+// Altura de línea
 // ---------------------------------------------------------------------------
 
 export const lineHeight = {
-  tight: 1.2,   // Para títulos grandes — menos espacio vertical
-  normal: 1.5,  // Para cuerpo de texto — cómodo de leer
-  relaxed: 1.75, // Para texto largo — máxima legibilidad
+  tight: 1.4,
+  normal: 1.6,
+  relaxed: 2.0,
 } as const;
 
 // ---------------------------------------------------------------------------
-// Estilos de texto predefinidos (text styles)
-// Listos para usar con spread en StyleSheet
+// Estilos predefinidos
 // ---------------------------------------------------------------------------
 
 export const textStyles = {
-  // Displays — números o texto muy grande
-  displayLarge: {
-    fontSize: fontSize.display,
-    fontWeight: fontWeight.bold,
-    lineHeight: fontSize.display * lineHeight.tight,
-  } as TextStyle,
-
-  // Títulos de pantalla
+  // Títulos con fuente pixel
   headingXL: {
+    fontFamily: fontFamily.pixel,
     fontSize: fontSize.xxxl,
-    fontWeight: fontWeight.bold,
     lineHeight: fontSize.xxxl * lineHeight.tight,
+    color: '#1a1a1a',
   } as TextStyle,
 
   headingLG: {
+    fontFamily: fontFamily.pixel,
     fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
     lineHeight: fontSize.xxl * lineHeight.tight,
+    color: '#1a1a1a',
   } as TextStyle,
 
   headingMD: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.semibold,
-    lineHeight: fontSize.xl * lineHeight.tight,
+    fontFamily: fontFamily.pixel,
+    fontSize: fontSize.lg,
+    lineHeight: fontSize.lg * lineHeight.tight,
+    color: '#1a1a1a',
   } as TextStyle,
 
   headingSM: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-    lineHeight: fontSize.lg * lineHeight.normal,
+    fontFamily: fontFamily.pixel,
+    fontSize: fontSize.md,
+    lineHeight: fontSize.md * lineHeight.tight,
+    color: '#1a1a1a',
   } as TextStyle,
 
-  // Cuerpo de texto
+  // Cuerpo con fuente mono retro
   bodyLG: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.regular,
-    lineHeight: fontSize.md * lineHeight.normal,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xl,
+    lineHeight: fontSize.xl * lineHeight.normal,
   } as TextStyle,
 
   bodyMD: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.regular,
-    lineHeight: fontSize.sm * lineHeight.normal,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.lg,
+    lineHeight: fontSize.lg * lineHeight.normal,
   } as TextStyle,
 
   bodySM: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.regular,
-    lineHeight: fontSize.xs * lineHeight.normal,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.md,
+    lineHeight: fontSize.md * lineHeight.normal,
   } as TextStyle,
 
-  // Labels — para campos de formulario, navegación
+  // Labels
   labelLG: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    lineHeight: fontSize.md * lineHeight.tight,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.lg,
+    lineHeight: fontSize.lg * lineHeight.tight,
   } as TextStyle,
 
   labelMD: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    lineHeight: fontSize.sm * lineHeight.tight,
-  } as TextStyle,
-
-  labelSM: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-    lineHeight: fontSize.xs * lineHeight.tight,
-  } as TextStyle,
-
-  // Caption — texto de apoyo muy pequeño
-  caption: {
-    fontSize: fontSize.xxs,
-    fontWeight: fontWeight.regular,
-    lineHeight: fontSize.xxs * lineHeight.normal,
-  } as TextStyle,
-
-  // Mono — IDs de Pokémon, números de pokedex
-  mono: {
-    fontSize: fontSize.sm,
-    fontFamily: fontFamily.mono ?? undefined,
-    fontWeight: fontWeight.regular,
-    lineHeight: fontSize.sm * lineHeight.normal,
-  } as TextStyle,
-
-  // Pokemon number — #0001 en la lista
-  pokemonNumber: {
-    fontSize: fontSize.xs,
-    fontFamily: fontFamily.mono ?? undefined,
-    fontWeight: fontWeight.bold,
-    lineHeight: fontSize.xs * lineHeight.tight,
-  } as TextStyle,
-
-  // Pokemon name — en la card de lista
-  pokemonName: {
+    fontFamily: fontFamily.mono,
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
     lineHeight: fontSize.md * lineHeight.tight,
   } as TextStyle,
 
-  // Stat value — número de las estadísticas base
-  statValue: {
+  labelSM: {
+    fontFamily: fontFamily.mono,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
     lineHeight: fontSize.sm * lineHeight.tight,
-    fontFamily: fontFamily.mono ?? undefined,
+  } as TextStyle,
+
+  // Caption
+  caption: {
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    lineHeight: fontSize.xs * lineHeight.normal,
+  } as TextStyle,
+
+  // Mono
+  mono: {
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.md,
+    lineHeight: fontSize.md * lineHeight.normal,
+  } as TextStyle,
+
+  // Pokémon específicos — pixel font
+  pokemonName: {
+    fontFamily: fontFamily.pixel,
+    fontSize: fontSize.md,
+    lineHeight: fontSize.md * lineHeight.tight,
+  } as TextStyle,
+
+  pokemonNumber: {
+    fontFamily: fontFamily.pixel,
+    fontSize: fontSize.xs,
+    lineHeight: fontSize.xs * lineHeight.tight,
+  } as TextStyle,
+
+  statValue: {
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.lg,
+    lineHeight: fontSize.lg * lineHeight.tight,
+  } as TextStyle,
+
+  displayLarge: {
+    fontFamily: fontFamily.pixel,
+    fontSize: fontSize.display,
+    lineHeight: fontSize.display * lineHeight.tight,
   } as TextStyle,
 } as const;
 

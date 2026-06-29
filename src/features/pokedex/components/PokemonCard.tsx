@@ -2,22 +2,41 @@
  * @file PokemonCard.tsx
  * @layer Features / Pokédex / Components
  *
- * Card de Pokémon para la lista principal.
- * Muestra sprite, número, nombre y tipos.
+ * Card de Pokémon con estilo retro pixel art.
+ * Barra de color del tipo a la izquierda, tipografía pixel.
  */
 
 import React from 'react';
-import { Image, View, StyleSheet } from 'react-native';
-import { Card } from '@/ui/components/Card';
+import { View, Image, StyleSheet, Pressable } from 'react-native';
+import { useTheme } from '@/app/providers/ThemeContext';
 import { TypeBadge } from '@/ui/components/Badge';
-import { PokemonNumber, PokemonName } from '@/ui/components/Typography';
-import { spacing } from '@/ui/tokens';
+import { spacing, borderRadius } from '@/ui/tokens';
+import { textStyles } from '@/ui/tokens/typography';
+import { Text } from 'react-native';
 import type { PokemonListItem } from '../types/pokemon.types';
 import type { PokemonType } from '@/ui/tokens';
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
+// Colores de tipo para la barra lateral
+const TYPE_COLORS: Record<string, string> = {
+  grass: '#57CC99',
+  fire: '#FF6B35',
+  water: '#4D9DE0',
+  electric: '#F7B731',
+  psychic: '#F72585',
+  ice: '#72EFDD',
+  dragon: '#7B2FBE',
+  dark: '#3D2C8D',
+  fairy: '#FF85A1',
+  normal: '#A8A8A8',
+  fighting: '#C77DFF',
+  flying: '#90E0EF',
+  poison: '#9B5DE5',
+  ground: '#C9A84C',
+  rock: '#8B7355',
+  bug: '#70A741',
+  ghost: '#4A4E69',
+  steel: '#B0B8C1',
+};
 
 interface PokemonCardProps {
   pokemon: PokemonListItem;
@@ -25,49 +44,62 @@ interface PokemonCardProps {
   testID?: string;
 }
 
-// ---------------------------------------------------------------------------
-// Componente
-// ---------------------------------------------------------------------------
-
 export const PokemonCard: React.FC<PokemonCardProps> = ({
   pokemon,
   onPress,
   testID,
-}) => (
-  <Card
-    variant="elevated"
-    onPress={onPress}
-    accessibilityLabel={`Pokémon ${pokemon.name}, número ${pokemon.id}`}
-    accessibilityHint="Toca para ver el detalle completo"
-    testID={testID ?? `pokemon-card-${pokemon.id}`}
-    style={styles.card}
-    padding={spacing.sm}
-  >
-    <View style={styles.content}>
-      {/* Sprite */}
-      <Image
-        source={{ uri: pokemon.sprite }}
-        style={styles.sprite}
-        resizeMode="contain"
-        accessibilityLabel={`Sprite de ${pokemon.name}`}
-        testID={`${testID ?? `pokemon-card-${pokemon.id}`}-sprite`}
-      />
+}) => {
+  const { colors } = useTheme();
+  const primaryType = pokemon.types[0] ?? 'normal';
+  const typeColor = TYPE_COLORS[primaryType] ?? '#A8A8A8';
 
-      {/* Info */}
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          opacity: pressed ? 0.85 : 1,
+        },
+      ]}
+      accessibilityLabel={`Pokémon ${pokemon.name}, número ${pokemon.id}`}
+      accessibilityHint="Toca para ver el detalle completo"
+      testID={testID ?? `pokemon-card-${pokemon.id}`}
+    >
+      {/* Barra de color del tipo a la izquierda */}
+      <View style={[styles.typeBar, { backgroundColor: typeColor }]} />
+
+      {/* Contenido */}
+      <View style={[styles.spriteContainer, { backgroundColor: typeColor + '22' }]}>
+        <Image
+          source={{ uri: pokemon.sprite }}
+          style={styles.sprite}
+          resizeMode="contain"
+          testID={`${testID ?? `pokemon-card-${pokemon.id}`}-sprite`}
+        />
+      </View>
+
       <View style={styles.info}>
-        <PokemonNumber testID={`${testID ?? `pokemon-card-${pokemon.id}`}-number`}>
+        {/* Número */}
+        <Text
+          style={[textStyles.pokemonNumber, { color: colors.textSecondary }]}
+          testID={`${testID ?? `pokemon-card-${pokemon.id}`}-number`}
+        >
           #{String(pokemon.id).padStart(4, '0')}
-        </PokemonNumber>
+        </Text>
 
-        <PokemonName
+        {/* Nombre */}
+        <Text
+          style={[textStyles.pokemonName, { color: colors.textPrimary, marginTop: 4 }]}
           numberOfLines={1}
-          style={styles.name}
           testID={`${testID ?? `pokemon-card-${pokemon.id}`}-name`}
         >
           {pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}
-        </PokemonName>
+        </Text>
 
-        {/* Tipos */}
+        {/* Badges de tipos */}
         {pokemon.types.length > 0 && (
           <View style={styles.types}>
             {pokemon.types.map((type) => (
@@ -75,48 +107,59 @@ export const PokemonCard: React.FC<PokemonCardProps> = ({
                 key={type}
                 type={type as PokemonType}
                 size="sm"
-                style={styles.badge}
                 testID={`${testID ?? `pokemon-card-${pokemon.id}`}-type-${type}`}
               />
             ))}
           </View>
         )}
       </View>
-    </View>
-  </Card>
-);
 
-// ---------------------------------------------------------------------------
-// Estilos
-// ---------------------------------------------------------------------------
+      {/* Ícono Pokébola derecha */}
+      <View style={styles.pokeballContainer}>
+        <Text style={[styles.pokeball, { color: colors.textMuted }]}>⊙</Text>
+      </View>
+    </Pressable>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: spacing.md,
-    marginVertical: spacing.xxs,
-  },
-  content: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginVertical: 3,
+    borderWidth: 2,
+    borderRadius: 0, // Estilo pixel art — sin redondeo
+    overflow: 'hidden',
   },
-  sprite: {
+  typeBar: {
+    width: 6,
+    alignSelf: 'stretch',
+  },
+  spriteContainer: {
     width: 80,
     height: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sprite: {
+    width: 72,
+    height: 72,
   },
   info: {
     flex: 1,
-    gap: spacing.xxxs,
-  },
-  name: {
-    textTransform: 'capitalize',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   types: {
     flexDirection: 'row',
     gap: spacing.xxs,
     marginTop: spacing.xxs,
   },
-  badge: {
-    marginRight: spacing.xxxs,
+  pokeballContainer: {
+    paddingRight: spacing.sm,
+  },
+  pokeball: {
+    fontSize: 28,
   },
 });

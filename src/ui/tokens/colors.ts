@@ -2,71 +2,52 @@
  * @file colors.ts
  * @layer UI / Tokens
  *
- * Paleta de colores del Design System nativo.
- * Fuente de verdad única para todos los colores de la aplicación.
+ * Paleta de colores del Design System retro Pokémon.
+ * Inspirado en la GameBoy Color y los juegos clásicos de Pokémon.
  *
- * REGLA: Ningún componente, screen o estilo debe usar un valor
- * hexadecimal hardcodeado. Siempre se importa desde aquí.
+ * Dos temas: light (crema/beige) y dark (azul oscuro).
  */
 
 // ---------------------------------------------------------------------------
-// Paleta base — valores primitivos, no se usan directamente en componentes
+// Paleta base — valores primitivos
 // ---------------------------------------------------------------------------
 
 const palette = {
-  // Rojos
-  red50: '#FFF5F5',
-  red100: '#FED7D7',
-  red200: '#FC8181',
-  red500: '#E53E3E',
-  red600: '#C53030',
-  red900: '#63171B',
+  // Cremas y beiges — tema claro
+  cream50: '#F5F0E8',
+  cream100: '#EDE8DC',
+  cream200: '#DDD8CC',
+  cream300: '#C8C3B8',
+
+  // Grises retro
+  retroGray100: '#C8C8A0',
+  retroGray200: '#A8A890',
+  retroGray300: '#888878',
+  retroGray400: '#686858',
+  retroGray500: '#484840',
+
+  // Azules oscuros — tema dark
+  darkBg: '#1a1a2e',
+  darkSurface: '#16213e',
+  darkCard: '#0f3460',
+  darkBorder: '#2a2a4e',
+  darkBorderLight: '#3a3a5e',
+
+  // Rojos Pokémon
+  pokeRed: '#CC3333',
+  pokeRedLight: '#FF5555',
+  pokeRedDark: '#AA2222',
 
   // Verdes
-  green50: '#F0FFF4',
-  green100: '#C6F6D5',
-  green200: '#9AE6B4',
-  green500: '#38A169',
-  green600: '#276749',
-  green900: '#1C4532',
+  green400: '#44AA44',
+  green500: '#228B22',
+  green600: '#1A6B1A',
 
-  // Azules
-  blue50: '#EBF8FF',
-  blue100: '#BEE3F8',
-  blue200: '#90CDF4',
-  blue500: '#3182CE',
-  blue600: '#2B6CB0',
-  blue900: '#1A365D',
+  // Amarillos
+  yellow400: '#DDAA00',
+  yellow500: '#BB8800',
 
-  // Amarillos / Warnings
-  yellow50: '#FFFFF0',
-  yellow100: '#FEFCBF',
-  yellow200: '#FAF089',
-  yellow500: '#D69E2E',
-  yellow600: '#B7791F',
-  yellow900: '#744210',
-
-  // Púrpuras
-  purple50: '#FAF5FF',
-  purple100: '#E9D8FD',
-  purple200: '#D6BCFA',
-  purple500: '#805AD5',
-  purple600: '#6B46C1',
-  purple900: '#322659',
-
-  // Grises neutros
-  gray50: '#F7F8FA',
-  gray100: '#EDF0F4',
-  gray200: '#E2E8F0',
-  gray300: '#CBD5E0',
-  gray400: '#A0AEC0',
-  gray500: '#718096',
-  gray600: '#4A5568',
-  gray700: '#2D3748',
-  gray800: '#1A202C',
-  gray900: '#171923',
-
-  // Pokémon — colores de tipos
+  // Pokémon — tipos (mismos colores oficiales)
   pokemonFire: '#FF6B35',
   pokemonWater: '#4D9DE0',
   pokemonGrass: '#57CC99',
@@ -86,69 +67,67 @@ const palette = {
   pokemonGhost: '#4A4E69',
   pokemonSteel: '#B0B8C1',
 
-  // Blancos y negros puros
+  // Neutros
   white: '#FFFFFF',
   black: '#000000',
   transparent: 'transparent',
 } as const;
 
 // ---------------------------------------------------------------------------
-// Tokens semánticos — estos SÍ se usan en los componentes
-// Cada token tiene un significado claro: para qué sirve, no qué color es
+// Tema claro — estilo GameBoy Color / retro beige
 // ---------------------------------------------------------------------------
 
-export const colors = {
-  // --- Marca ---
-  primary: palette.red500,
-  primaryLight: palette.red100,
-  primaryDark: palette.red600,
-
-  // --- Superficies (backgrounds) ---
-  background: palette.gray50,
-  surface: palette.white,
+export const lightColors = {
+  // Backgrounds
+  background: palette.cream100,
+  surface: palette.cream50,
   surfaceElevated: palette.white,
-  surfaceMuted: palette.gray100,
+  surfaceMuted: palette.cream200,
 
-  // --- Texto ---
-  textPrimary: palette.gray900,
-  textSecondary: palette.gray600,
-  textMuted: palette.gray400,
+  // Texto
+  textPrimary: '#1a1a1a',
+  textSecondary: palette.retroGray400,
+  textMuted: palette.retroGray300,
   textInverse: palette.white,
-  textDisabled: palette.gray300,
+  textDisabled: palette.retroGray200,
+  textAccent: palette.pokeRed,
 
-  // --- Bordes ---
-  border: palette.gray200,
-  borderStrong: palette.gray300,
-  borderFocus: palette.blue500,
+  // Bordes — estilo pixel art con borde negro grueso
+  border: '#000000',
+  borderStrong: '#000000',
+  borderFocus: palette.pokeRed,
+  borderLight: palette.cream300,
 
-  // --- Estados semánticos ---
+  // Marca
+  primary: palette.pokeRed,
+  primaryLight: '#FFE5E5',
+  primaryDark: palette.pokeRedDark,
+
+  // Estados
   success: palette.green500,
-  successLight: palette.green50,
+  successLight: '#E5FFE5',
   successDark: palette.green600,
+  warning: palette.yellow400,
+  warningLight: '#FFF8E5',
+  warningDark: palette.yellow500,
+  error: palette.pokeRed,
+  errorLight: '#FFE5E5',
+  errorDark: palette.pokeRedDark,
+  info: '#4D9DE0',
+  infoLight: '#E5F4FF',
+  infoDark: '#3A7AB8',
 
-  warning: palette.yellow500,
-  warningLight: palette.yellow50,
-  warningDark: palette.yellow600,
-
-  error: palette.red500,
-  errorLight: palette.red50,
-  errorDark: palette.red600,
-
-  info: palette.blue500,
-  infoLight: palette.blue50,
-  infoDark: palette.blue600,
-
-  // --- UI general ---
-  overlay: 'rgba(0, 0, 0, 0.5)',
-  skeleton: palette.gray200,
-  skeletonHighlight: palette.gray100,
-  disabled: palette.gray200,
-  disabledText: palette.gray400, 
+  // UI
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  skeleton: palette.cream200,
+  skeletonHighlight: palette.cream100,
+  disabled: palette.cream300,
+  disabledText: palette.retroGray300,
   transparent: palette.transparent,
   black: palette.black,
   white: palette.white,
 
-  // --- Pokémon types ---
+  // Pokémon tipos
   pokemonTypes: {
     fire: palette.pokemonFire,
     water: palette.pokemonWater,
@@ -170,10 +149,83 @@ export const colors = {
     steel: palette.pokemonSteel,
   },
 
-  // Acceso a paleta base si se necesita en casos excepcionales
   palette,
 } as const;
 
-// Tipo derivado automáticamente — no se mantiene a mano
-export type ColorToken = keyof Omit<typeof colors, 'palette' | 'pokemonTypes'>;
-export type PokemonType = keyof typeof colors.pokemonTypes;
+// ---------------------------------------------------------------------------
+// Tema oscuro — estilo azul profundo
+// ---------------------------------------------------------------------------
+
+export const darkColors = {
+  background: palette.darkBg,
+  surface: palette.darkSurface,
+  surfaceElevated: palette.darkCard,
+  surfaceMuted: palette.darkBorder,
+
+  textPrimary: '#E8E8FF',
+  textSecondary: '#A8A8CC',
+  textMuted: '#686888',
+  textInverse: '#1a1a2e',
+  textDisabled: '#444466',
+  textAccent: '#FF6B6B',
+
+  border: palette.darkBorderLight,
+  borderStrong: '#5a5a8e',
+  borderFocus: '#FF6B6B',
+  borderLight: palette.darkBorder,
+
+  primary: '#FF6B6B',
+  primaryLight: '#3a1a1a',
+  primaryDark: '#CC3333',
+
+  success: '#44AA44',
+  successLight: '#1a3a1a',
+  successDark: '#228B22',
+  warning: '#DDAA00',
+  warningLight: '#3a2a00',
+  warningDark: '#BB8800',
+  error: '#FF6B6B',
+  errorLight: '#3a1a1a',
+  errorDark: '#CC3333',
+  info: '#4D9DE0',
+  infoLight: '#1a2a3a',
+  infoDark: '#3A7AB8',
+
+  overlay: 'rgba(0, 0, 0, 0.8)',
+  skeleton: palette.darkBorder,
+  skeletonHighlight: palette.darkSurface,
+  disabled: palette.darkBorder,
+  disabledText: '#444466',
+  transparent: palette.transparent,
+  black: palette.black,
+  white: palette.white,
+
+  pokemonTypes: {
+    fire: palette.pokemonFire,
+    water: palette.pokemonWater,
+    grass: palette.pokemonGrass,
+    electric: palette.pokemonElectric,
+    psychic: palette.pokemonPsychic,
+    ice: palette.pokemonIce,
+    dragon: palette.pokemonDragon,
+    dark: palette.pokemonDark,
+    fairy: palette.pokemonFairy,
+    normal: palette.pokemonNormal,
+    fighting: palette.pokemonFighting,
+    flying: palette.pokemonFlying,
+    poison: palette.pokemonPoison,
+    ground: palette.pokemonGround,
+    rock: palette.pokemonRock,
+    bug: palette.pokemonBug,
+    ghost: palette.pokemonGhost,
+    steel: palette.pokemonSteel,
+  },
+
+  palette,
+} as const;
+
+// Por defecto exportamos el tema claro
+export const colors = lightColors;
+export type ColorToken = keyof Omit<typeof lightColors, 'palette' | 'pokemonTypes'>;
+export type PokemonType = keyof typeof lightColors.pokemonTypes;
+export type AppColors = typeof lightColors;

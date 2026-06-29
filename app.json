@@ -33,7 +33,8 @@
           "photosPermission": "Permite acceder a tu galería para seleccionar tu foto de entrenador.",
           "cameraPermission": "Permite usar la cámara para tomar tu foto de entrenador."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

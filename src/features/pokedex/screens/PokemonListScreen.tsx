@@ -2,31 +2,64 @@
  * @file PokemonListScreen.tsx
  * @layer Features / Pokédex / Screens
  *
- * Pantalla principal del Pokédex con búsqueda integrada.
- *
- * Dos modos:
- * - Normal: lista paginada con scroll infinito
- * - Búsqueda: resultados filtrados del catálogo completo
+ * Lista de Pokémon con búsqueda, filtros por tipo y diseño retro.
+ * Los tipos se muestran en todas las cards gracias al mapa de tipos.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  ScrollView,
+  Text,
+  Pressable,
+  Modal,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
+import { useTheme } from '@/app/providers/ThemeContext';
 import { usePokemonInfiniteList, usePrefetchPokemon } from '../hooks/usePokemon';
 import { usePokemonSearch } from '../hooks/usePokemonSearch';
+import { usePokemonTypeMap } from '../hooks/usePokemonTypes';
 import { PokemonCard } from '../components/PokemonCard';
 import { SearchBar } from '../components/SearchBar';
 import { PokemonListSkeleton } from '@/ui/components/Skeleton';
-import { Heading, Body } from '@/ui/components/Typography';
-import { Button } from '@/ui/components/Button';
-import { colors, spacing } from '@/ui/tokens';
+import { spacing, textStyles } from '@/ui/tokens';
+import { httpClient } from '@/shared/api';
+import { extractIdFromUrl, getSpriteUrl } from '../types/pokemon.types';
 import type { PokemonListItem } from '../types/pokemon.types';
 import type { PokedexNavigationProp } from '@/app/navigation';
+
+// ---------------------------------------------------------------------------
+// Filtros de tipo disponibles
+// ---------------------------------------------------------------------------
+
+const TYPE_FILTERS = [
+  'Todos', 'Planta', 'Veneno', 'Fuego', 'Agua',
+  'Volador', 'Psíquico', 'Bicho', 'Normal', 'Eléctrico',
+  'Tierra', 'Hada', 'Lucha', 'Roca', 'Fantasma',
+] as const;
+
+const TYPE_FILTER_MAP: Record<string, string> = {
+  'Todos': '',
+  'Planta': 'grass',
+  'Veneno': 'poison',
+  'Fuego': 'fire',
+  'Agua': 'water',
+  'Volador': 'flying',
+  'Psíquico': 'psychic',
+  'Bicho': 'bug',
+  'Normal': 'normal',
+  'Eléctrico': 'electric',
+  'Tierra': 'ground',
+  'Hada': 'fairy',
+  'Lucha': 'fighting',
+  'Roca': 'rock',
+  'Fantasma': 'ghost',
+};
 
 // ---------------------------------------------------------------------------
 // Props
@@ -39,6 +72,11 @@ type Props = PokedexNavigationProp<'PokemonList'>;
 // ---------------------------------------------------------------------------
 
 export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const [activeFilter, setActiveFilter] = useState('Todos');
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Lista principal paginada
   const {
     data,
     isLoading,
@@ -49,22 +87,69 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
     isFetchingNextPage,
   } = usePokemonInfiniteList();
 
+  // Mapa de tipos para enriquecer la lista en modo "Todos"
+  const { data: typeMap = {} } = usePokemonTypeMap();
+
+  // Búsqueda por nombre
   const {
     searchQuery,
     setSearchQuery,
     clearSearch,
     results: searchResults,
     isSearching,
-    isLoadingCatalog,
   } = usePokemonSearch();
 
   const prefetchPokemon = usePrefetchPokemon();
 
-  // Lista normal aplanada de todas las páginas
-  const pokemonList = data?.pages.flatMap((page) => page.items) ?? [];
+  // Tipo activo para filtrar
+  const filterType = TYPE_FILTER_MAP[activeFilter] ?? '';
 
-  // Datos a mostrar según el modo
-  const displayList = isSearching ? searchResults : pokemonList;
+  // Query de filtro por tipo — usa /type/{name} de la PokéAPI
+  const {
+    data: typeFilterData,
+    isLoading: isLoadingTypeFilter,
+  } = useQuery({
+    queryKey: ['pokemon', 'type-filter', filterType],
+    queryFn: async (): Promise<PokemonListItem[]> => {
+      if (!filterType) return [];
+      const { data: typeData } = await httpClient.get(`/type/${filterType}`);
+      return typeData.pokemon
+        .slice(0, 60)
+        .map(({ pokemon }: { pokemon: { name: string; url: string } }) => {
+          const id = extractIdFromUrl(pokemon.url);
+          return {
+            id,
+            name: pokemon.name,
+            sprite: getSpriteUrl(id),
+            types: typeMap[id] ?? [filterType],
+          };
+        });
+    },
+    enabled: Boolean(filterType),
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+
+  // Lista normal aplanada — enriquecida con tipos del mapa
+  const pokemonList = (data?.pages.flatMap((page) => page.items) ?? []).map(
+    (pokemon) => ({
+      ...pokemon,
+      types: typeMap[pokemon.id] ?? pokemon.types,
+    })
+  );
+
+  // Resultados de búsqueda enriquecidos con tipos
+  const enrichedSearchResults = searchResults.map((pokemon) => ({
+    ...pokemon,
+    types: typeMap[pokemon.id] ?? pokemon.types,
+  }));
+
+  // Lista a mostrar según el modo activo
+  const displayList: PokemonListItem[] = isSearching
+    ? enrichedSearchResults
+    : filterType
+    ? (typeFilterData ?? [])
+    : pokemonList;
 
   // ---------------------------------------------------------------------------
   // Handlers
@@ -82,71 +167,64 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const handleEndReached = useCallback(() => {
-    if (!isSearching && hasNextPage && !isFetchingNextPage) {
+    if (!isSearching && !filterType && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
-  }, [isSearching, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [isSearching, filterType, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // ---------------------------------------------------------------------------
-  // Estado de carga inicial (solo para la lista normal)
+  // Estados de carga y error
   // ---------------------------------------------------------------------------
 
-  if (isLoading && !isSearching) {
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onClear={clearSearch}
-          testID="search-bar"
-        />
-        <PokemonListSkeleton count={10} testID="list-skeleton" />
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['bottom']}
+      >
+        <PokemonListSkeleton count={10} />
       </SafeAreaView>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Estado de error
-  // ---------------------------------------------------------------------------
-
-  if (isError && !isSearching) {
+  if (isError) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
-        <View style={styles.centered} testID="error-state">
-          <Heading size="md" align="center" color="textSecondary">
-            Algo salió mal
-          </Heading>
-          <Body align="center" color="textMuted" style={styles.errorText}>
-            No pudimos cargar los Pokémon. Verifica tu conexión a internet.
-          </Body>
-          <Button
-            label="Reintentar"
-            variant="primary"
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['bottom']}
+      >
+        <View style={styles.centered}>
+          <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
+            Error al cargar
+          </Text>
+          <Pressable
             onPress={() => refetch()}
-            testID="retry-button"
-            style={styles.retryButton}
-          />
+            style={[
+              styles.retryBtn,
+              { backgroundColor: colors.primary, borderColor: colors.border },
+            ]}
+          >
+            <Text style={[textStyles.labelMD, { color: colors.textInverse }]}>
+              Reintentar
+            </Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Estado vacío en búsqueda
-  // ---------------------------------------------------------------------------
-
-  const showEmptySearch =
-    isSearching && searchResults.length === 0 && !isLoadingCatalog;
-
-  // ---------------------------------------------------------------------------
   // Render principal
   // ---------------------------------------------------------------------------
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['bottom']}
+    >
       <FlatList
         data={displayList}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item) => `${item.id}-${activeFilter}`}
         renderItem={({ item }) => (
           <PokemonCard
             pokemon={item}
@@ -160,42 +238,157 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
         onEndReachedThreshold={0.3}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        // SearchBar pegado al tope de la lista
         ListHeaderComponent={
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onClear={clearSearch}
-            testID="search-bar"
-          />
+          <View>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onClear={clearSearch}
+              testID="search-bar"
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filtersContent}
+              style={styles.filters}
+            >
+              {TYPE_FILTERS.map((filter) => {
+                const isActive = activeFilter === filter;
+                return (
+                  <Pressable
+                    key={filter}
+                    onPress={() => {
+                      setActiveFilter(filter);
+                      clearSearch();
+                    }}
+                    style={[
+                      styles.filterChip,
+                      {
+                        backgroundColor: isActive
+                          ? colors.primary
+                          : colors.surface,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    testID={`filter-${filter}`}
+                  >
+                    <Text
+                      style={[
+                        textStyles.labelSM,
+                        {
+                          color: isActive
+                            ? colors.textInverse
+                            : colors.textPrimary,
+                        },
+                      ]}
+                    >
+                      {filter}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
         }
-        // Estado vacío en búsqueda
         ListEmptyComponent={
-          showEmptySearch ? (
-            <View style={styles.emptySearch} testID="empty-search">
-              <Body align="center" style={styles.emptyEmoji}>
-                🔍
-              </Body>
-              <Heading size="sm" align="center" color="textSecondary">
+          isLoadingTypeFilter ? (
+            <View style={styles.loadingFilter}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text
+                style={[
+                  textStyles.bodyMD,
+                  { color: colors.textMuted, marginTop: spacing.sm },
+                ]}
+              >
+                Cargando {activeFilter}...
+              </Text>
+            </View>
+          ) : isSearching && enrichedSearchResults.length === 0 ? (
+            <View style={styles.empty}>
+              <Text
+                style={[textStyles.headingSM, { color: colors.textSecondary }]}
+              >
                 Sin resultados
-              </Heading>
-              <Body align="center" color="textMuted" style={styles.emptyText}>
-                No encontramos ningún Pokémon con "{searchQuery}"
-              </Body>
+              </Text>
+              <Text
+                style={[
+                  textStyles.bodyMD,
+                  { color: colors.textMuted, marginTop: spacing.xs },
+                ]}
+              >
+                No hay Pokémon con "{searchQuery}"
+              </Text>
             </View>
           ) : null
         }
-        // Footer con spinner de carga de siguiente página
         ListFooterComponent={
-          isFetchingNextPage && !isSearching ? (
-            <View style={styles.footer} testID="loading-more">
+          isFetchingNextPage && !filterType && !isSearching ? (
+            <View style={styles.footer}>
               <ActivityIndicator size="small" color={colors.primary} />
             </View>
           ) : null
         }
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
         testID="pokemon-list"
       />
+
+      {/* Modal de ajustes */}
+      <Modal
+        visible={showSettings}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSettings(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowSettings(false)}
+        >
+          <Pressable
+            style={[
+              styles.settingsPanel,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.settingsHeader}>
+              <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
+                ⚙ Ajustes
+              </Text>
+              <Pressable onPress={() => setShowSettings(false)}>
+                <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
+                  ✕
+                </Text>
+              </Pressable>
+            </View>
+
+            <View style={[styles.settingsRow, { borderColor: colors.borderLight }]}>
+              <Text style={[textStyles.bodyMD, { color: colors.textPrimary }]}>
+                🌙 Modo oscuro
+              </Text>
+              <Switch
+                value={isDark}
+                onValueChange={toggleTheme}
+                trackColor={{ false: colors.disabled, true: colors.primary }}
+                thumbColor={colors.surface}
+              />
+            </View>
+
+            <View style={styles.settingsRow}>
+              <Text style={[textStyles.bodyMD, { color: colors.textPrimary }]}>
+                🌐 Idioma
+              </Text>
+              <View style={styles.langButtons}>
+                <Pressable style={[styles.langBtn, { backgroundColor: colors.primary }]}>
+                  <Text style={[textStyles.labelSM, { color: colors.textInverse }]}>ES</Text>
+                </Pressable>
+                <Pressable style={[styles.langBtn, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 2 }]}>
+                  <Text style={[textStyles.labelSM, { color: colors.textPrimary }]}>EN</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -205,44 +398,77 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    paddingBottom: spacing.xxl,
-  },
+  container: { flex: 1 },
+  listContent: { paddingBottom: spacing.xxl },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
-    marginTop: spacing.xxl,
+    marginTop: 100,
   },
-  errorText: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
+  retryBtn: {
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xs,
+    borderWidth: 2,
   },
-  retryButton: {
-    minWidth: 160,
+  filters: { marginBottom: spacing.xs },
+  filtersContent: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xxs,
+    gap: spacing.xs,
+  },
+  filterChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderWidth: 2,
+    marginRight: spacing.xxs,
   },
   footer: {
     paddingVertical: spacing.lg,
     alignItems: 'center',
   },
-  separator: {
-    height: spacing.xxs,
+  loadingFilter: {
+    alignItems: 'center',
+    paddingTop: spacing.xxl,
   },
-  emptySearch: {
+  empty: {
     alignItems: 'center',
     paddingTop: spacing.xxl,
     paddingHorizontal: spacing.xl,
   },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: spacing.md,
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  emptyText: {
-    marginTop: spacing.xs,
+  settingsPanel: {
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  settingsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+  },
+  langButtons: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  langBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
   },
 });
