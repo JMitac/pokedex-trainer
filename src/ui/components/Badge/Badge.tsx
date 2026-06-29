@@ -2,175 +2,104 @@
  * @file Badge.tsx
  * @layer UI / Components / Badge
  *
- * Componente de etiqueta visual para tipos de Pokémon y estados semánticos.
- *
- * REGLA: Los colores de tipos Pokémon siempre deben venir de
- * colors.pokemonTypes — nunca hardcodear valores hexadecimales
- * para los tipos directamente en los componentes de feature.
+ * Componente de etiqueta visual con estilo retro pixel art.
+ * Los tipos Pokémon se muestran en español y en mayúsculas.
  */
 
 import React from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { colors, spacing, borderRadius, textStyles } from '@/ui/tokens';
-import { Typography } from '@/ui/components/Typography';
+import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { borderRadius, textStyles } from '@/ui/tokens';
 import type { PokemonType } from '@/ui/tokens';
+
+// ---------------------------------------------------------------------------
+// Mapa de tipo en inglés → español
+// ---------------------------------------------------------------------------
+
+export const POKEMON_TYPE_NAMES_ES: Record<string, string> = {
+  fire: 'Fuego',
+  water: 'Agua',
+  grass: 'Planta',
+  electric: 'Eléctrico',
+  psychic: 'Psíquico',
+  ice: 'Hielo',
+  dragon: 'Dragón',
+  dark: 'Siniestro',
+  fairy: 'Hada',
+  normal: 'Normal',
+  fighting: 'Lucha',
+  flying: 'Volador',
+  poison: 'Veneno',
+  ground: 'Tierra',
+  rock: 'Roca',
+  bug: 'Bicho',
+  ghost: 'Fantasma',
+  steel: 'Acero',
+};
+
+// Colores oficiales por tipo
+const TYPE_COLORS: Record<string, string> = {
+  fire: '#FF6B35',
+  water: '#4D9DE0',
+  grass: '#57CC99',
+  electric: '#F7B731',
+  psychic: '#F72585',
+  ice: '#72EFDD',
+  dragon: '#7B2FBE',
+  dark: '#3D2C8D',
+  fairy: '#FF85A1',
+  normal: '#A8A8A8',
+  fighting: '#C77DFF',
+  flying: '#90E0EF',
+  poison: '#9B5DE5',
+  ground: '#C9A84C',
+  rock: '#8B7355',
+  bug: '#70A741',
+  ghost: '#4A4E69',
+  steel: '#B0B8C1',
+};
 
 // ---------------------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------------------
 
-export type BadgeVariant =
-  | 'neutral'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'info'
-  | 'pokemon';
-
+export type BadgeVariant = 'neutral' | 'success' | 'warning' | 'error' | 'info' | 'pokemon';
 export type BadgeSize = 'sm' | 'md' | 'lg';
 
 export interface BadgeProps {
-  /**
-   * Texto que se muestra dentro del badge.
-   */
   label: string;
-
-  /**
-   * Variante semántica del badge.
-   * - neutral: gris — etiquetas genéricas
-   * - success: verde — estados positivos
-   * - warning: amarillo — estados de advertencia
-   * - error: rojo — estados de error
-   * - info: azul — información
-   * - pokemon: usa pokemonType para el color
-   * @default 'neutral'
-   */
   variant?: BadgeVariant;
-
-  /**
-   * Tipo de Pokémon — solo se aplica cuando variant="pokemon".
-   * Determina el color de fondo del badge.
-   */
   pokemonType?: PokemonType;
-
-  /**
-   * Tamaño del badge.
-   * @default 'md'
-   */
   size?: BadgeSize;
-
-  /**
-   * Estilo visual del badge.
-   * - solid: fondo de color sólido, texto blanco
-   * - outline: solo borde, texto del color del variant
-   * - subtle: fondo muy suave, texto del color del variant
-   * @default 'solid'
-   */
   appearance?: 'solid' | 'outline' | 'subtle';
-
-  /**
-   * Estilos adicionales del contenedor.
-   */
   style?: StyleProp<ViewStyle>;
-
-  /**
-   * ID para pruebas automatizadas.
-   */
   testID?: string;
 }
 
-// ---------------------------------------------------------------------------
-// Configuración de colores por variante
-// ---------------------------------------------------------------------------
-
+// Colores semánticos
 const VARIANT_COLORS: Record<
   Exclude<BadgeVariant, 'pokemon'>,
-  { bg: string; text: string; border: string; subtleBg: string }
+  { bg: string; text: string }
 > = {
-  neutral: {
-    bg: colors.textSecondary,
-    text: colors.textInverse,
-    border: colors.textSecondary,
-    subtleBg: colors.surfaceMuted,
-  },
-  success: {
-    bg: colors.success,
-    text: colors.textInverse,
-    border: colors.success,
-    subtleBg: colors.successLight,
-  },
-  warning: {
-    bg: colors.warning,
-    text: colors.textInverse,
-    border: colors.warning,
-    subtleBg: colors.warningLight,
-  },
-  error: {
-    bg: colors.error,
-    text: colors.textInverse,
-    border: colors.error,
-    subtleBg: colors.errorLight,
-  },
-  info: {
-    bg: colors.info,
-    text: colors.textInverse,
-    border: colors.info,
-    subtleBg: colors.infoLight,
-  },
+  neutral: { bg: '#718096', text: '#FFFFFF' },
+  success: { bg: '#38A169', text: '#FFFFFF' },
+  warning: { bg: '#D69E2E', text: '#FFFFFF' },
+  error:   { bg: '#E53E3E', text: '#FFFFFF' },
+  info:    { bg: '#3182CE', text: '#FFFFFF' },
+};
+
+// Tamaños
+const SIZE_STYLES: Record<BadgeSize, {
+  paddingH: number;
+  paddingV: number;
+  fontSize: number;
+}> = {
+  sm: { paddingH: 4,  paddingV: 3, fontSize: 7 },
+  md: { paddingH: 8,  paddingV: 3, fontSize: 11 },
+  lg: { paddingH: 12, paddingV: 4, fontSize: 12 },
 };
 
 // ---------------------------------------------------------------------------
-// Configuración de tamaños
-// ---------------------------------------------------------------------------
-
-const SIZE_STYLES: Record<
-  BadgeSize,
-  { paddingHorizontal: number; paddingVertical: number; textStyle: object }
-> = {
-  sm: {
-    paddingHorizontal: spacing.xxs,
-    paddingVertical: 2,
-    textStyle: textStyles.caption,
-  },
-  md: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xxxs,
-    textStyle: textStyles.labelSM,
-  },
-  lg: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-    textStyle: textStyles.labelMD,
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Helper: obtener colores según variante y pokemonType
-// ---------------------------------------------------------------------------
-
-function getBadgeColors(
-  variant: BadgeVariant,
-  pokemonType?: PokemonType
-): { bg: string; text: string; border: string; subtleBg: string } {
-  if (variant === 'pokemon') {
-    const typeColor =
-      pokemonType && colors.pokemonTypes[pokemonType]
-        ? colors.pokemonTypes[pokemonType]
-        : colors.textSecondary;
-
-    return {
-      bg: typeColor,
-      text: colors.textInverse,
-      border: typeColor,
-      subtleBg: `${typeColor}22`, // 13% de opacidad
-    };
-  }
-
-  return VARIANT_COLORS[variant];
-}
-
-// ---------------------------------------------------------------------------
-// Componente principal
+// Componente Badge
 // ---------------------------------------------------------------------------
 
 export const Badge: React.FC<BadgeProps> = ({
@@ -182,104 +111,112 @@ export const Badge: React.FC<BadgeProps> = ({
   style,
   testID,
 }) => {
-  const badgeColors = getBadgeColors(variant, pokemonType);
   const sizeStyle = SIZE_STYLES[size];
 
-  const containerStyle = {
-    paddingHorizontal: sizeStyle.paddingHorizontal,
-    paddingVertical: sizeStyle.paddingVertical,
-    backgroundColor:
-      appearance === 'solid'
-        ? badgeColors.bg
-        : appearance === 'subtle'
-        ? badgeColors.subtleBg
-        : colors.transparent,
-    borderWidth: appearance === 'outline' ? 1 : 0,
-    borderColor: badgeColors.border,
-  };
+  let bgColor: string;
+  let textColor: string;
 
-  const textColor =
-    appearance === 'solid' ? badgeColors.text : badgeColors.bg;
+  if (variant === 'pokemon' && pokemonType) {
+    bgColor = TYPE_COLORS[pokemonType] ?? '#A8A8A8';
+    textColor = '#FFFFFF';
+  } else if (variant !== 'pokemon') {
+    bgColor = VARIANT_COLORS[variant].bg;
+    textColor = VARIANT_COLORS[variant].text;
+  } else {
+    bgColor = '#A8A8A8';
+    textColor = '#FFFFFF';
+  }
+
+  const containerBg =
+    appearance === 'solid'
+      ? bgColor
+      : appearance === 'subtle'
+      ? `${bgColor}33`
+      : 'transparent';
+
+  const textCol =
+    appearance === 'solid' ? textColor : bgColor;
 
   return (
     <View
-      style={[styles.base, containerStyle, style]}
+      style={[
+        styles.base,
+        {
+          backgroundColor: containerBg,
+          borderWidth: appearance === 'outline' ? 1.5 : 1.5,
+          borderColor: appearance === 'outline' ? bgColor : '#000000',
+          paddingHorizontal: sizeStyle.paddingH,
+          paddingTop: sizeStyle.paddingV,
+          //paddingVertical: sizeStyle.paddingV,
+        },
+        style,
+      ]}
       testID={testID}
       accessibilityLabel={label}
     >
-      <Typography
-        style={[sizeStyle.textStyle, { color: textColor }]}
+      <Text
+        style={[
+          styles.text,
+          {
+            color: textCol,
+            fontSize: sizeStyle.fontSize,
+          },
+        ]}
         testID={testID ? `${testID}-label` : undefined}
-        uppercase={variant === 'pokemon'}
       >
-        {label}
-      </Typography>
+        {label.charAt(0).toUpperCase() + label.slice(1)}
+      </Text>
     </View>
   );
 };
 
 // ---------------------------------------------------------------------------
-// Sub-componente de conveniencia: TypeBadge
-// Para los tipos de Pokémon — el caso de uso más frecuente en el proyecto
+// TypeBadge — badge especializado para tipos Pokémon en español
 // ---------------------------------------------------------------------------
 
 export interface TypeBadgeProps {
-  /**
-   * Tipo de Pokémon — determina el color y el texto del badge.
-   */
   type: PokemonType;
-
-  /**
-   * Tamaño del badge.
-   * @default 'md'
-   */
   size?: BadgeSize;
-
-  /**
-   * Estilos adicionales.
-   */
   style?: StyleProp<ViewStyle>;
-
-  /**
-   * ID para pruebas automatizadas.
-   */
   testID?: string;
 }
 
-/**
- * Badge especializado para tipos de Pokémon.
- * Muestra el nombre del tipo en mayúsculas con el color oficial.
- *
- * Uso:
- *   <TypeBadge type="fire" />   → badge naranja "FIRE"
- *   <TypeBadge type="water" />  → badge azul "WATER"
- */
 export const TypeBadge: React.FC<TypeBadgeProps> = ({
   type,
   size = 'md',
   style,
   testID,
-}) => (
-  <Badge
-    label={type}
-    variant="pokemon"
-    pokemonType={type}
-    size={size}
-    appearance="solid"
-    style={style}
-    testID={testID ?? `badge-type-${type}`}
-  />
-);
+}) => {
+  const labelEs = POKEMON_TYPE_NAMES_ES[type] ?? type;
+
+  return (
+    <Badge
+      label={labelEs}
+      variant="pokemon"
+      pokemonType={type}
+      size={size}
+      appearance="solid"
+      style={style}
+      testID={testID ?? `badge-type-${type}`}
+    />
+  );
+};
 
 // ---------------------------------------------------------------------------
-// Estilos base
+// Estilos
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
   base: {
     alignSelf: 'flex-start',
-    borderRadius: borderRadius.full,
+    borderRadius: 0,
+    //borderRadius: borderRadius.xs,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  text: {
+    fontFamily: 'PressStart2P_400Regular',
+    fontWeight: '400',
+    letterSpacing: 0.5,
   },
 });
