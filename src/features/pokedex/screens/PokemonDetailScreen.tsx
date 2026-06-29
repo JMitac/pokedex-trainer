@@ -3,8 +3,7 @@
  * @layer Features / Pokédex / Screens
  *
  * Detalle de Pokémon con diseño retro pixel art.
- * Incluye botón Capturar/Capturado, debilidades con x2,
- * stats segmentadas y cadena de evolución en modal.
+ * El gradiente del header combina los colores de todos los tipos del Pokémon.
  */
 
 import React, { useState } from 'react';
@@ -30,29 +29,55 @@ import { spacing, textStyles } from '@/ui/tokens';
 import type { PokemonType } from '@/ui/tokens';
 import type { PokedexNavigationProp } from '@/app/navigation';
 
-// Colores de fondo por tipo para el header
-const TYPE_BG_COLORS: Record<string, [string, string]> = {
-  grass:    ['#A8D8A8', '#C8B8E8'],
-  fire:     ['#FFB8A8', '#FFD8B8'],
-  water:    ['#A8C8FF', '#C8D8FF'],
-  electric: ['#FFE888', '#FFEF98'],
-  psychic:  ['#FFB8D8', '#FFD8E8'],
-  ice:      ['#C8F0F0', '#D8F8F8'],
-  dragon:   ['#9898E8', '#B8B8FF'],
-  dark:     ['#888898', '#A8A8B8'],
-  fairy:    ['#FFD8E8', '#FFE8F8'],
-  normal:   ['#C8C8B8', '#D8D8C8'],
-  fighting: ['#E8A8C8', '#F8C8E8'],
-  flying:   ['#C8D8F8', '#D8E8FF'],
-  poison:   ['#C8A8E8', '#D8C8F8'],
-  ground:   ['#E8D8A8', '#F8E8C8'],
-  rock:     ['#C8B898', '#D8C8A8'],
-  bug:      ['#C8D898', '#D8E8A8'],
-  ghost:    ['#A8A8C8', '#B8B8D8'],
-  steel:    ['#C8D0D8', '#D8E0E8'],
+// ---------------------------------------------------------------------------
+// Colores de fondo por tipo — tonos suaves para el gradiente
+// ---------------------------------------------------------------------------
+
+const TYPE_BG_COLORS: Record<string, string> = {
+  grass:    '#A8D8A8',
+  fire:     '#FFB8A8',
+  water:    '#A8C8FF',
+  electric: '#FFE888',
+  psychic:  '#FFB8D8',
+  ice:      '#C8F0F0',
+  dragon:   '#9898E8',
+  dark:     '#888898',
+  fairy:    '#FFD8E8',
+  normal:   '#C8C8B8',
+  fighting: '#E8A8C8',
+  flying:   '#C8D8F8',
+  poison:   '#C8A8E8',
+  ground:   '#E8D8A8',
+  rock:     '#C8B898',
+  bug:      '#C8D898',
+  ghost:    '#A8A8C8',
+  steel:    '#C8D0D8',
 };
 
-// Colores segmentados de stats
+// Color crema neutro para cuando hay un solo tipo
+const CREAM = '#F0EDE8';
+
+// ---------------------------------------------------------------------------
+// Función para obtener colores del gradiente según los tipos
+// ---------------------------------------------------------------------------
+
+const getGradientColors = (types: string[]): [string, string, ...string[]] => {
+  if (types.length === 0) {
+    return ['#C8C8B8', CREAM];
+  }
+  if (types.length === 1) {
+    const color = TYPE_BG_COLORS[types[0]] ?? '#C8C8B8';
+    return [color, CREAM];
+  }
+  // Dos o más tipos — combina todos los colores
+  const colors = types.map((t) => TYPE_BG_COLORS[t] ?? '#C8C8B8');
+  return colors as [string, string, ...string[]];
+};
+
+// ---------------------------------------------------------------------------
+// Colores de stats segmentadas
+// ---------------------------------------------------------------------------
+
 const getStatColor = (value: number): string => {
   if (value >= 100) return '#44AA44';
   if (value >= 60) return '#DDAA00';
@@ -63,19 +88,36 @@ const getStatColor = (value: number): string => {
 // Componente: StatBar segmentada estilo retro
 // ---------------------------------------------------------------------------
 
-const RetroStatBar: React.FC<{ label: string; value: number; colors: any }> = ({
-  label, value, colors,
-}) => {
-  const MAX = 15; // Número de segmentos
+const RetroStatBar: React.FC<{
+  label: string;
+  value: number;
+  appColors: ReturnType<typeof useTheme>['colors'];
+}> = ({ label, value, appColors }) => {
+  const MAX = 15;
   const filled = Math.round((value / 255) * MAX);
   const statColor = getStatColor(value);
 
   return (
     <View style={statStyles.row}>
-      <Text style={[textStyles.labelSM, { color: colors.textSecondary, width: 68, textAlign: 'right' }]}>
+      <Text
+        style={[
+          textStyles.labelSM,
+          { color: appColors.textSecondary, width: 68, textAlign: 'right' },
+        ]}
+      >
         {label}
       </Text>
-      <Text style={[textStyles.statValue, { color: colors.textPrimary, width: 32, textAlign: 'right', marginHorizontal: 6 }]}>
+      <Text
+        style={[
+          textStyles.statValue,
+          {
+            color: appColors.textPrimary,
+            width: 32,
+            textAlign: 'right',
+            marginHorizontal: 6,
+          },
+        ]}
+      >
         {value}
       </Text>
       <View style={statStyles.barContainer}>
@@ -85,8 +127,9 @@ const RetroStatBar: React.FC<{ label: string; value: number; colors: any }> = ({
             style={[
               statStyles.segment,
               {
-                backgroundColor: i < filled ? statColor : colors.surfaceMuted,
-                borderColor: colors.border,
+                backgroundColor:
+                  i < filled ? statColor : appColors.surfaceMuted,
+                borderColor: appColors.border,
               },
             ]}
           />
@@ -131,57 +174,105 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [showEvolution, setShowEvolution] = useState(false);
 
   const { data: pokemon, isLoading, isError, refetch } = usePokemonDetail({ id });
-  const { evolutionChain, weaknesses, isLoading: isLoadingExtra } = usePokemonEvolution(pokemon);
+  const {
+    evolutionChain,
+    weaknesses,
+    isLoading: isLoadingExtra,
+  } = usePokemonEvolution(pokemon);
+
+  // ---------------------------------------------------------------------------
+  // Estado de carga
+  // ---------------------------------------------------------------------------
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['bottom']}
+      >
         <PokemonDetailSkeleton testID="detail-skeleton" />
       </SafeAreaView>
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Estado de error
+  // ---------------------------------------------------------------------------
+
   if (isError || !pokemon) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['bottom']}
+      >
         <View style={styles.centered}>
           <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
             No encontramos a {name}
           </Text>
           <Pressable
             onPress={() => refetch()}
-            style={[styles.actionBtn, { backgroundColor: colors.primary, borderColor: colors.border }]}
+            style={[
+              styles.actionBtn,
+              { backgroundColor: colors.primary, borderColor: colors.border },
+            ]}
           >
-            <Text style={[textStyles.labelMD, { color: colors.textInverse }]}>Reintentar</Text>
+            <Text style={[textStyles.labelMD, { color: colors.textInverse }]}>
+              Reintentar
+            </Text>
           </Pressable>
           <Pressable
             onPress={() => navigation.goBack()}
-            style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: spacing.xs }]}
+            style={[
+              styles.actionBtn,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                marginTop: spacing.xs,
+              },
+            ]}
           >
-            <Text style={[textStyles.labelMD, { color: colors.textPrimary }]}>Volver</Text>
+            <Text style={[textStyles.labelMD, { color: colors.textPrimary }]}>
+              Volver
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
     );
   }
 
-  const primaryType = pokemon.types[0] ?? 'normal';
-  const bgColors = TYPE_BG_COLORS[primaryType] ?? ['#C8C8B8', '#D8D8C8'];
+  // ---------------------------------------------------------------------------
+  // Gradiente multi-tipo
+  // ---------------------------------------------------------------------------
+
+  const gradientColors = getGradientColors(pokemon.types);
+
+  // ---------------------------------------------------------------------------
+  // Render principal
+  // ---------------------------------------------------------------------------
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
-      <ScrollView showsVerticalScrollIndicator={false} testID="detail-scroll">
-
-        {/* Header con gradiente del tipo */}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['bottom']}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        testID="detail-scroll"
+      >
+        {/* Header con gradiente combinado de todos los tipos */}
         <LinearGradient
-          colors={bgColors}
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
           testID="detail-image-container"
         >
-          {/* Número grande en el fondo */}
+          {/* Número grande semitransparente en el fondo */}
           <Text style={styles.bgNumber}>
             #{String(pokemon.id).padStart(4, '0')}
           </Text>
+
+          {/* Sprite del Pokémon */}
           <Image
             source={{ uri: pokemon.sprite }}
             style={styles.sprite}
@@ -190,14 +281,30 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           />
         </LinearGradient>
 
-        {/* Contenido */}
+        {/* Contenido principal */}
         <View style={[styles.content, { backgroundColor: colors.background }]}>
 
           {/* Número y nombre */}
-          <Text style={[textStyles.pokemonNumber, { color: colors.textSecondary, textAlign: 'center', marginBottom: 4 }]} testID="detail-number">
+          <Text
+            style={[
+              textStyles.pokemonNumber,
+              { color: colors.textSecondary, textAlign: 'center', marginBottom: 4 },
+            ]}
+            testID="detail-number"
+          >
             #{String(pokemon.id).padStart(4, '0')}
           </Text>
-          <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center', textTransform: 'capitalize' }]} testID="detail-name">
+          <Text
+            style={[
+              textStyles.headingLG,
+              {
+                color: colors.textPrimary,
+                textAlign: 'center',
+                textTransform: 'capitalize',
+              },
+            ]}
+            testID="detail-name"
+          >
             {pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}
           </Text>
 
@@ -219,8 +326,10 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             style={[
               styles.captureBtn,
               {
-                backgroundColor: isCaptured ? colors.surfaceMuted : '#44AA44',
-                borderColor: colors.border,
+                backgroundColor: isCaptured
+                  ? colors.surfaceMuted
+                  : '#44AA44',
+                borderColor: '#000000',
               },
             ]}
             testID="capture-btn"
@@ -232,44 +341,113 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Medidas */}
           <View style={styles.measuresRow} testID="detail-measures">
-            <View style={[styles.measureBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[textStyles.labelSM, { color: colors.textSecondary }]}>Altura</Text>
-              <Text style={[textStyles.bodyLG, { color: colors.textPrimary }]} testID="detail-height">
+            <View
+              style={[
+                styles.measureBox,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[textStyles.labelSM, { color: colors.textSecondary }]}
+              >
+                Altura
+              </Text>
+              <Text
+                style={[textStyles.bodyLG, { color: colors.textPrimary }]}
+                testID="detail-height"
+              >
                 {pokemon.heightM} m
               </Text>
             </View>
-            <View style={[styles.measureBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[textStyles.labelSM, { color: colors.textSecondary }]}>Peso</Text>
-              <Text style={[textStyles.bodyLG, { color: colors.textPrimary }]} testID="detail-weight">
+            <View
+              style={[
+                styles.measureBox,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text
+                style={[textStyles.labelSM, { color: colors.textSecondary }]}
+              >
+                Peso
+              </Text>
+              <Text
+                style={[textStyles.bodyLG, { color: colors.textPrimary }]}
+                testID="detail-weight"
+              >
                 {pokemon.weightKg} kg
               </Text>
             </View>
           </View>
 
           {/* Debilidades */}
-          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]} testID="detail-weaknesses">
-            <Text style={[textStyles.headingSM, { color: colors.textPrimary, marginBottom: spacing.sm }]}>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            testID="detail-weaknesses"
+          >
+            <Text
+              style={[
+                textStyles.headingSM,
+                { color: colors.textPrimary, marginBottom: spacing.sm },
+              ]}
+            >
               Debilidades
             </Text>
             {isLoadingExtra ? (
-              <ActivityIndicator size="small" color={colors.primary} />
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                testID="weaknesses-loading"
+              />
             ) : weaknesses.length > 0 ? (
               <View style={styles.weakGrid}>
                 {weaknesses.map((type) => (
                   <View key={type} style={styles.weakBadgeWrapper}>
-                    <TypeBadge type={type as PokemonType} size="sm" testID={`weakness-${type}`} />
-                    <Text style={[textStyles.caption, { color: colors.textInverse, marginLeft: 2 }]}>x2</Text>
+                    <TypeBadge
+                      type={type as PokemonType}
+                      size="sm"
+                      testID={`weakness-${type}`}
+                    />
+                    <Text
+                      style={[
+                        textStyles.caption,
+                        { color: colors.textSecondary, marginLeft: 2 },
+                      ]}
+                    >
+                      x2
+                    </Text>
                   </View>
                 ))}
               </View>
             ) : (
-              <Text style={[textStyles.bodyMD, { color: colors.textMuted }]}>Sin debilidades</Text>
+              <Text style={[textStyles.bodyMD, { color: colors.textMuted }]}>
+                Sin debilidades
+              </Text>
             )}
           </View>
 
-          {/* Stats */}
-          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]} testID="detail-stats">
-            <Text style={[textStyles.headingSM, { color: colors.textPrimary, marginBottom: spacing.sm }]}>
+          {/* Estadísticas Base */}
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            testID="detail-stats"
+          >
+            <Text
+              style={[
+                textStyles.headingSM,
+                { color: colors.textPrimary, marginBottom: spacing.sm },
+              ]}
+            >
               Estadísticas Base
             </Text>
             {pokemon.stats.map((stat) => (
@@ -277,20 +455,48 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 key={stat.name}
                 label={stat.label}
                 value={stat.value}
-                colors={colors}
+                appColors={colors}
               />
             ))}
           </View>
 
           {/* Habilidades */}
-          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]} testID="detail-abilities">
-            <Text style={[textStyles.headingSM, { color: colors.textPrimary, marginBottom: spacing.sm }]}>
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            testID="detail-abilities"
+          >
+            <Text
+              style={[
+                textStyles.headingSM,
+                { color: colors.textPrimary, marginBottom: spacing.sm },
+              ]}
+            >
               Habilidades
             </Text>
             <View style={styles.abilitiesRow}>
               {pokemon.abilities.map((ability) => (
-                <View key={ability} style={[styles.abilityChip, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                  <Text style={[textStyles.bodyMD, { color: colors.textPrimary, textTransform: 'capitalize' }]}>
+                <View
+                  key={ability}
+                  style={[
+                    styles.abilityChip,
+                    {
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      textStyles.bodyMD,
+                      {
+                        color: colors.textPrimary,
+                        textTransform: 'capitalize',
+                      },
+                    ]}
+                  >
                     {ability.replace('-', ' ')}
                   </Text>
                 </View>
@@ -298,17 +504,30 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           </View>
 
-          {/* Cadena de evolución — botón que abre modal */}
+          {/* Botón Cadena de Evolución */}
           <Pressable
             onPress={() => setShowEvolution(true)}
-            style={[styles.evolutionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            style={[
+              styles.evolutionBtn,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
             testID="evolution-btn"
           >
             <Text style={styles.evolutionEmoji}>🧬</Text>
-            <Text style={[textStyles.headingSM, { color: colors.textPrimary, flex: 1 }]}>
+            <Text
+              style={[
+                textStyles.headingSM,
+                { color: colors.textPrimary, flex: 1 },
+              ]}
+            >
               Cadena de Evolución
             </Text>
-            <Text style={[textStyles.bodyLG, { color: colors.textMuted }]}>▶</Text>
+            <Text style={[textStyles.bodyLG, { color: colors.textMuted }]}>
+              ▶
+            </Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -326,30 +545,55 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           onPress={() => setShowEvolution(false)}
         >
           <Pressable
-            style={[styles.evolutionPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            style={[
+              styles.evolutionPanel,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
             onPress={(e) => e.stopPropagation()}
           >
             {/* Header del modal */}
             <View style={styles.modalHeader}>
               <Text style={styles.evolutionEmoji}>🧬</Text>
-              <Text style={[textStyles.headingSM, { color: colors.textPrimary, flex: 1 }]}>
+              <Text
+                style={[
+                  textStyles.headingSM,
+                  { color: colors.textPrimary, flex: 1 },
+                ]}
+              >
                 Cadena de Evolución
               </Text>
-              <Pressable onPress={() => setShowEvolution(false)} testID="evolution-modal-close">
-                <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>✕</Text>
+              <Pressable
+                onPress={() => setShowEvolution(false)}
+                testID="evolution-modal-close"
+              >
+                <Text
+                  style={[textStyles.headingSM, { color: colors.textPrimary }]}
+                >
+                  ✕
+                </Text>
               </Pressable>
             </View>
 
             {/* Contenido */}
             {isLoadingExtra ? (
-              <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: spacing.lg }} />
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                style={{ marginVertical: spacing.lg }}
+              />
             ) : (
               <EvolutionChain
                 chain={evolutionChain}
                 currentId={pokemon.id}
                 onPokemonPress={(evoId, evoName) => {
                   setShowEvolution(false);
-                  navigation.push('PokemonDetail', { id: evoId, name: evoName });
+                  navigation.push('PokemonDetail', {
+                    id: evoId,
+                    name: evoName,
+                  });
                 }}
                 testID="evolution-chain"
               />
@@ -463,7 +707,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     marginTop: spacing.md,
   },
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
