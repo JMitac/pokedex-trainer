@@ -5,13 +5,17 @@
  * Lista de Pokémon con búsqueda, filtros por tipo y diseño retro.
  * Los tipos se muestran en todas las cards gracias al mapa de tipos.
  *
- * IMPORTANTE — Espaciado inferior:
- * El SafeAreaView usa edges={['top']} únicamente. El TabNavigator ya
- * calcula el padding inferior real del dispositivo con
- * useSafeAreaInsets() y se lo aplica al tab bar — por eso NO se debe
- * agregar padding inferior extra grande aquí. listContent solo necesita
- * un margen pequeño (spacing.sm) para que la última card no quede
- * pegada justo al borde del tab bar, nada más.
+ * IMPORTANTE — Workaround de bug en react-native-safe-area-context:
+ * El prop `edges` de <SafeAreaView> no se está aplicando correctamente
+ * en esta combinación de Expo SDK 56 + RN 0.85 + New Architecture +
+ * react-native-safe-area-context 5.7.0 — el componente nativo ignora
+ * `edges={['top']}` y sigue aplicando un padding-bottom de ~116px
+ * (confirmado con el Element Inspector de React Native).
+ *
+ * Mientras no se actualice la librería con el fix, evitamos el
+ * <SafeAreaView> de 'react-native-safe-area-context' por completo
+ * en esta pantalla. Usamos un <View> normal + useSafeAreaInsets()
+ * para aplicar manualmente SOLO el padding-top necesario.
  */
 
 import React, { useCallback, useState } from 'react';
@@ -26,7 +30,7 @@ import {
   Modal,
   Switch,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '@/app/providers/ThemeContext';
 import { usePokemonInfiniteList, usePrefetchPokemon } from '../hooks/usePokemon';
@@ -81,6 +85,7 @@ type Props = PokedexNavigationProp<'PokemonList'>;
 
 export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
   const { colors, isDark, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [activeFilter, setActiveFilter] = useState('Todos');
   const [showSettings, setShowSettings] = useState(false);
 
@@ -186,20 +191,24 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
 
   if (isLoading) {
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['top']}
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, paddingTop: insets.top },
+        ]}
       >
         <PokemonListSkeleton count={10} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (isError) {
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['top']}
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, paddingTop: insets.top },
+        ]}
       >
         <View style={styles.centered}>
           <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
@@ -217,7 +226,7 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -226,9 +235,11 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
   // ---------------------------------------------------------------------------
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['top']}
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
     >
       <FlatList
         data={displayList}
@@ -397,7 +408,7 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
           </Pressable>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -407,11 +418,7 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  // Antes: spacing.xxl (mucho) — ahora spacing.sm, suficiente para que
-  // la última card respire sin generar el hueco grande visto en iOS.
-  // El tab bar ya tiene su propio padding calculado con safe area real.
-  //listContent: { paddingBottom: spacing.xxl },
-  listContent: { paddingBottom: spacing.none },
+  listContent: { paddingBottom: spacing.sm },
   centered: {
     flex: 1,
     alignItems: 'center',
