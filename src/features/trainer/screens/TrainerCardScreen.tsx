@@ -3,11 +3,15 @@
  * @layer Features / Trainer / Screens
  *
  * Carnet del entrenador con foto, lema y Pokémon inicial.
+ *
+ * IMPORTANTE — Workaround de bug en react-native-safe-area-context:
+ * Ver nota completa en PokemonListScreen.tsx. Usamos <View> simple
+ * en lugar de <SafeAreaView edges={['top']}> para evitar el bug de
+ * layout que genera padding-bottom fantasma de ~116px en iOS.
  */
 
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Text } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/app/providers/ThemeContext';
 import { useTrainerStore } from '../store/trainerStore';
 import { ProfilePhoto } from '../components/ProfilePhoto';
@@ -48,21 +52,21 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
 
   if (!trainer) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.centered} testID="card-no-data">
           <Text style={[textStyles.headingSM, { color: colors.textSecondary, textAlign: 'center' }]}>
             No hay datos de entrenador
           </Text>
           <Button label="Registrarme" variant="primary" onPress={handleEdit} testID="btn-go-to-form" style={{ marginTop: spacing.xl }} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const pokemonType = TYPE_MAP[trainer.favoritePokemonType];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} testID="trainer-card-scroll">
 
         {/* Encabezado */}
@@ -175,7 +179,7 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
         onCancel={() => setShowDeleteModal(false)}
         testID="delete-modal"
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

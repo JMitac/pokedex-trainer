@@ -5,6 +5,11 @@
  * Paso 2 del formulario — Preferencias.
  * Funciona tanto para registro nuevo como para edición.
  * Si hay datos en el store, las opciones aparecen pre-seleccionadas.
+ *
+ * IMPORTANTE — Workaround de bug en react-native-safe-area-context:
+ * Ver nota completa en PokemonListScreen.tsx. Usamos <View> simple
+ * en lugar de <SafeAreaView edges={['top']}> para evitar el bug de
+ * layout que genera padding-bottom fantasma de ~116px en iOS.
  */
 
 import React from 'react';
@@ -14,7 +19,6 @@ import {
   StyleSheet,
   Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button } from '@/ui/components/Button';
@@ -135,7 +139,7 @@ export const Step2Preferences: React.FC<Props> = ({ route, navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StepIndicator
         currentStep={2}
         totalSteps={2}
@@ -207,7 +211,7 @@ export const Step2Preferences: React.FC<Props> = ({ route, navigation }) => {
           testID="btn-finish"
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

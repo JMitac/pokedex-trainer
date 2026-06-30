@@ -238,7 +238,7 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.background, paddingTop: insets.top },
+        { backgroundColor: colors.background },
       ]}
     >
       <FlatList

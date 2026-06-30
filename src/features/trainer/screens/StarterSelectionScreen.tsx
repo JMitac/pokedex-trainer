@@ -4,6 +4,11 @@
  *
  * Pantalla de selección del Pokémon inicial.
  * Usa ConfirmModal y el sprite directo de la API.
+ *
+ * IMPORTANTE — Workaround de bug en react-native-safe-area-context:
+ * Ver nota completa en PokemonListScreen.tsx. Usamos <View> simple
+ * en lugar de <SafeAreaView edges={['top']}> para evitar el bug de
+ * layout que genera padding-bottom fantasma de ~116px en iOS.
  */
 
 import React, { useState } from 'react';
@@ -16,7 +21,6 @@ import {
   Text,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/app/providers/ThemeContext';
 import { useTrainerStore } from '../store/trainerStore';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -208,10 +212,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
 
   if (mode === 'choose') {
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['top']}
-      >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center' }]}>
             Elige tu Pokémon Inicial
@@ -270,7 +271,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
           onCancel={() => setModalState(INITIAL_MODAL)}
           testID="starter-modal"
         />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -280,10 +281,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
 
   if (mode === 'traditional') {
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['top']}
-      >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center' }]}>
             Starters Clásicos
@@ -339,7 +337,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
           onCancel={() => setModalState(INITIAL_MODAL)}
           testID="starter-modal"
         />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -348,10 +346,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
   // -------------------------------------------------------------------------
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['top']}
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center' }]}>
           Pokémon Aleatorio
@@ -412,7 +407,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
         onCancel={handleCancel}
         testID="starter-modal"
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

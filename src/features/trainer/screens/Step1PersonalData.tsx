@@ -4,6 +4,11 @@
  *
  * Paso 1 — Datos Personales.
  * Incluye el campo opcional de lema del entrenador.
+ *
+ * IMPORTANTE — Workaround de bug en react-native-safe-area-context:
+ * Ver nota completa en PokemonListScreen.tsx. Usamos <View> simple
+ * en lugar de <SafeAreaView edges={['top']}> para evitar el bug de
+ * layout que genera padding-bottom fantasma de ~116px en iOS.
  */
 
 import React, { useState } from 'react';
@@ -15,7 +20,6 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller, SubmitHandler, Resolver } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Input } from '@/ui/components/Input';
@@ -116,7 +120,7 @@ export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -250,7 +254,7 @@ export const Step1PersonalData: React.FC<Props> = ({ navigation }) => {
           />
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

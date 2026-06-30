@@ -4,6 +4,16 @@
  *
  * Detalle de Pokémon con diseño retro pixel art.
  * El gradiente del header combina los colores de todos los tipos del Pokémon.
+ *
+ * IMPORTANTE — Workaround de bug en react-native-safe-area-context:
+ * Tanto <SafeAreaView edges={['top']}> como aplicar manualmente
+ * paddingTop: insets.top (vía useSafeAreaInsets) disparan un bug de
+ * layout en esta combinación de Expo SDK 56 + RN 0.85 + New Architecture
+ * que genera un padding-bottom fantasma de ~116px debajo del tab bar.
+ *
+ * Solución confirmada: usar un <View> simple sin ningún manejo de
+ * safe area en el componente. El header gradient ya tiene suficiente
+ * altura visual y el contenido respira bien sin el padding-top extra.
  */
 
 import React, { useState } from 'react';
@@ -17,7 +27,6 @@ import {
   Pressable,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/app/providers/ThemeContext';
 import { usePokemonDetail } from '../hooks/usePokemon';
@@ -186,12 +195,9 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   if (isLoading) {
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['top']}
-      >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <PokemonDetailSkeleton testID="detail-skeleton" />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -201,10 +207,7 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   if (isError || !pokemon) {
     return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['top']}
-      >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.centered}>
           <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
             No encontramos a {name}
@@ -236,7 +239,7 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -251,10 +254,7 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   // ---------------------------------------------------------------------------
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['top']}
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         testID="detail-scroll"
@@ -601,7 +601,7 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           </Pressable>
         </Pressable>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
