@@ -42,7 +42,8 @@ export const PokedexStack: React.FC = () => (
       component={PokemonListScreen}
       options={{
         title: 'Pokédex',
-        headerLargeTitle: true,
+        //headerLargeTitle: true,
+        headerRight: () => null,
       }}
     />
     <Stack.Screen
