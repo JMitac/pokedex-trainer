@@ -329,16 +329,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: spacing.touchTarget,
+    // iOS necesita una altura fija para centrar el texto correctamente.
+    // Android maneja el centrado bien con minHeight + alignItems.
+    height: Platform.OS === 'ios' ? spacing.touchTarget : undefined,
     paddingHorizontal: spacing.sm,
   },
   input: {
     flex: 1,
     ...textStyles.bodyLG,
     color: colors.textPrimary,
-    paddingVertical: Platform.OS === 'ios' ? spacing.xs : spacing.xxs,
-    // Elimina el padding interno de Android que desalinea el texto
+    // iOS: sin padding vertical, el centrado lo hace el contenedor con
+    // height fijo + alignItems: 'center'. Agregar paddingVertical aquí
+    // descuadra el texto hacia abajo en iOS.
+    // Android: necesita un pequeño padding para no recortar el texto.
+    paddingVertical: Platform.OS === 'ios' ? 0 : spacing.xxs,
     paddingLeft: 0,
-    includeFontPadding: false,
+    textAlignVertical: 'center',
+    // includeFontPadding solo existe en Android — en iOS no tiene efecto
+    // pero lo aislamos explícitamente para evitar confusión futura.
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   disabledContainer: {
     backgroundColor: colors.disabled,

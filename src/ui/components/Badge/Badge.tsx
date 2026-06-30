@@ -3,11 +3,18 @@
  * @layer UI / Components / Badge
  *
  * Componente de etiqueta visual con estilo retro pixel art.
- * Los tipos Pokémon se muestran en español y en mayúsculas.
+ * Los tipos Pokémon se muestran en español, primera letra mayúscula.
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  StyleProp,
+  ViewStyle,
+  Platform,
+} from 'react-native';
 import { borderRadius, textStyles } from '@/ui/tokens';
 import type { PokemonType } from '@/ui/tokens';
 
@@ -143,11 +150,15 @@ export const Badge: React.FC<BadgeProps> = ({
         styles.base,
         {
           backgroundColor: containerBg,
-          borderWidth: appearance === 'outline' ? 1.5 : 1.5,
+          borderWidth: 1.5,
           borderColor: appearance === 'outline' ? bgColor : '#000000',
           paddingHorizontal: sizeStyle.paddingH,
           paddingTop: sizeStyle.paddingV,
-          //paddingVertical: sizeStyle.paddingV,
+          // iOS calcula el lineHeight de PressStart2P más arriba dentro
+          // de su propia línea de texto, dejando el badge "apegado" abajo.
+          // Compensamos con paddingBottom extra solo en iOS.
+          paddingBottom:
+            Platform.OS === 'ios' ? sizeStyle.paddingV + 2 : sizeStyle.paddingV,
         },
         style,
       ]}
@@ -210,7 +221,6 @@ const styles = StyleSheet.create({
   base: {
     alignSelf: 'flex-start',
     borderRadius: 0,
-    //borderRadius: borderRadius.xs,
     justifyContent: 'center',
     alignItems: 'center',
   },
