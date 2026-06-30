@@ -4,13 +4,6 @@
  *
  * Barra de búsqueda nativa para el Pokédex.
  * Incluye ícono de lupa, campo de texto y botón de limpiar.
- *
- * IMPORTANTE — Centrado vertical del texto en iOS:
- * El contenedor tiene una altura FIJA (SEARCH_BAR_HEIGHT) en iOS.
- * Sin una altura fija, `alignItems: 'center'` no tiene una caja
- * de referencia estable y el texto del TextInput queda descentrado.
- * `includeFontPadding` es una propiedad EXCLUSIVA de Android —
- * aplicarla en iOS no tiene efecto pero la aislamos por claridad.
  */
 
 import React, { useRef } from 'react';
@@ -97,10 +90,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 // Estilos
 // ---------------------------------------------------------------------------
 
-// Altura fija del contenedor en iOS — necesaria para que
-// alignItems: 'center' centre el texto correctamente.
-const SEARCH_BAR_HEIGHT = 44;
-
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -108,13 +97,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     borderRadius: borderRadius.full,
     paddingHorizontal: spacing.sm,
+    paddingVertical: Platform.OS === 'ios' ? spacing.xs : spacing.xxs,
     marginHorizontal: spacing.md,
     marginVertical: spacing.xs,
-    // iOS: altura fija para centrado correcto.
-    // Android: altura definida por el padding del contenido.
-    ...(Platform.OS === 'ios'
-      ? { height: SEARCH_BAR_HEIGHT }
-      : { paddingVertical: spacing.xxs }),
   },
   searchIcon: {
     fontSize: fontSize.md,
@@ -126,11 +111,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textPrimary,
     paddingVertical: 0,
-    textAlignVertical: 'center',
-    // includeFontPadding es EXCLUSIVO de Android.
-    // Nunca debe aplicarse en iOS — no tiene efecto pero
-    // lo aislamos para que quede explícito en el código.
-    ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
+    includeFontPadding: false,
   },
   clearButton: {
     marginLeft: spacing.xs,
