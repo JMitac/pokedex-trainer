@@ -12,11 +12,19 @@
  *
  * En producción el código del Playground es eliminado
  * del bundle por dead code elimination del Metro bundler.
+ *
+ * IMPORTANTE — Safe Area del Tab Bar en iOS:
+ * El tab bar es responsable de su propio safe area inferior
+ * (home indicator). Usamos useSafeAreaInsets() para calcular
+ * el padding real del dispositivo en lugar de un valor fijo.
+ * Las screens individuales deben usar edges={['top']} en su
+ * SafeAreaView, NUNCA 'bottom' — eso duplicaría el espacio.
  */
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform, View, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { colors, spacing, textStyles } from '@/ui/tokens';
 import type { TabParamList } from './types';
@@ -34,6 +42,8 @@ if (isPlaygroundEnabled) {
 }
 
 const Tab = createBottomTabNavigator<TabParamList>();
+
+const DEV_BADGE_COLOR = '#7B2FBE';
 
 // ---------------------------------------------------------------------------
 // Iconos inline simples (Text) — se reemplazarán con @expo/vector-icons
@@ -58,72 +68,90 @@ const TabIcon = ({
 // Componente
 // ---------------------------------------------------------------------------
 
-export const TabNavigator: React.FC = () => (
-  <Tab.Navigator
-    initialRouteName="PokedexTab"
-    screenOptions={{
-      headerShown: false,
-      tabBarStyle: {
-        backgroundColor: colors.surface,
-        borderTopColor: colors.border,
-        borderTopWidth: 0.5,
-        paddingBottom: Platform.OS === 'ios' ? spacing.xs : spacing.xxs,
-        paddingTop: spacing.xxs,
-        height: Platform.OS === 'ios' ? 84 : 60,
-      },
-      tabBarActiveTintColor: colors.primary,
-      tabBarInactiveTintColor: colors.textMuted,
-      tabBarLabelStyle: {
-        ...textStyles.caption,
-        marginTop: 2,
-      },
-    }}
-  >
-    {/* Tab 1 — Pokédex */}
-    <Tab.Screen
-      name="PokedexTab"
-      component={PokedexStack}
-      options={{
-        tabBarLabel: 'Pokédex',
-        tabBarIcon: ({ focused }) => (
-          <TabIcon emoji="📖" focused={focused} />
-        ),
-        tabBarAccessibilityLabel: 'Pokédex — Lista de Pokémon',
-      }}
-    />
+export const TabNavigator: React.FC = () => {
+  // Safe area real del dispositivo — en iOS con home indicator
+  // suele ser ~34px, en dispositivos con botón físico es 0.
+  const insets = useSafeAreaInsets();
 
-    {/* Tab 2 — Trainer */}
-    <Tab.Screen
-      name="TrainerTab"
-      component={TrainerStack}
-      options={{
-        tabBarLabel: 'Entrenador',
-        tabBarIcon: ({ focused }) => (
-          <TabIcon emoji="🎒" focused={focused} />
-        ),
-        tabBarAccessibilityLabel: 'Perfil de Entrenador',
-      }}
-    />
+  // Altura base del contenido del tab bar (íconos + label),
+  // sin contar el safe area inferior.
+  const TAB_BAR_CONTENT_HEIGHT = 50;
 
-    {/* Tab 3 — Dev Playground (solo en DEV y QA) */}
-    {isPlaygroundEnabled && PlaygroundStack && (
+  // El padding inferior real = safe area del dispositivo.
+  // Si insets.bottom es 0 (Android o iPhone con botón físico),
+  // usamos un mínimo de spacing.xxs para que no quede pegado.
+  const bottomPadding =
+    Platform.OS === 'ios'
+      ? Math.max(insets.bottom, spacing.xxs)
+      : spacing.xxs;
+
+  return (
+    <Tab.Navigator
+      initialRouteName="PokedexTab"
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          borderTopWidth: 0.5,
+          paddingTop: spacing.xxs,
+          paddingBottom: bottomPadding,
+          height: TAB_BAR_CONTENT_HEIGHT + bottomPadding,
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarLabelStyle: {
+          ...textStyles.caption,
+          marginTop: 2,
+        },
+      }}
+    >
+      {/* Tab 1 — Pokédex */}
       <Tab.Screen
-        name="PlaygroundTab"
-        component={PlaygroundStack}
+        name="PokedexTab"
+        component={PokedexStack}
         options={{
-          tabBarLabel: 'Dev',
+          tabBarLabel: 'Pokédex',
           tabBarIcon: ({ focused }) => (
-            <TabIcon emoji="🧪" focused={focused} />
+            <TabIcon emoji="📖" focused={focused} />
           ),
-          tabBarAccessibilityLabel: 'Dev Playground — Solo en desarrollo',
-          tabBarBadge: 'DEV',
-          tabBarBadgeStyle: {
-            backgroundColor: colors.palette.purple500,
-            color: colors.textInverse,
-            fontSize: 8,
-          },
+          tabBarAccessibilityLabel: 'Pokédex — Lista de Pokémon',
         }}
       />
-    )}
-  </Tab.Navigator>
-);
+
+      {/* Tab 2 — Trainer */}
+      <Tab.Screen
+        name="TrainerTab"
+        component={TrainerStack}
+        options={{
+          tabBarLabel: 'Entrenador',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon emoji="🎒" focused={focused} />
+          ),
+          tabBarAccessibilityLabel: 'Perfil de Entrenador',
+        }}
+      />
+
+      {/* Tab 3 — Dev Playground (solo en DEV y QA) */}
+      {isPlaygroundEnabled && PlaygroundStack && (
+        <Tab.Screen
+          name="PlaygroundTab"
+          component={PlaygroundStack}
+          options={{
+            tabBarLabel: 'Dev',
+            tabBarIcon: ({ focused }) => (
+              <TabIcon emoji="🧪" focused={focused} />
+            ),
+            tabBarAccessibilityLabel: 'Dev Playground — Solo en desarrollo',
+            tabBarBadge: 'DEV',
+            tabBarBadgeStyle: {
+              backgroundColor: DEV_BADGE_COLOR,
+              color: colors.textInverse,
+              fontSize: 8,
+            },
+          }}
+        />
+      )}
+    </Tab.Navigator>
+  );
+};
