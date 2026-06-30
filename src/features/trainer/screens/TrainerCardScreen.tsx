@@ -48,7 +48,7 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
 
   if (!trainer) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <View style={styles.centered} testID="card-no-data">
           <Text style={[textStyles.headingSM, { color: colors.textSecondary, textAlign: 'center' }]}>
             No hay datos de entrenador
@@ -62,7 +62,7 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
   const pokemonType = TYPE_MAP[trainer.favoritePokemonType];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} testID="trainer-card-scroll">
 
         {/* Encabezado */}

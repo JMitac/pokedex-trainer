@@ -180,7 +180,7 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['bottom']}
+        edges={['top']}
       >
         <PokemonListSkeleton count={10} />
       </SafeAreaView>
@@ -191,7 +191,7 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['bottom']}
+        edges={['top']}
       >
         <View style={styles.centered}>
           <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
@@ -220,7 +220,7 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['bottom']}
+      edges={['top']}
     >
       <FlatList
         data={displayList}

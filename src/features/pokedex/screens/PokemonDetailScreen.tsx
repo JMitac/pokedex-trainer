@@ -188,7 +188,7 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['bottom']}
+        edges={['top']}
       >
         <PokemonDetailSkeleton testID="detail-skeleton" />
       </SafeAreaView>
@@ -203,7 +203,7 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['bottom']}
+        edges={['top']}
       >
         <View style={styles.centered}>
           <Text style={[textStyles.headingSM, { color: colors.textPrimary }]}>
@@ -253,7 +253,7 @@ export const PokemonDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['bottom']}
+      edges={['top']}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}

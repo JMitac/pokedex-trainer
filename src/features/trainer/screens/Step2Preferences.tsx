@@ -135,7 +135,7 @@ export const Step2Preferences: React.FC<Props> = ({ route, navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StepIndicator
         currentStep={2}
         totalSteps={2}

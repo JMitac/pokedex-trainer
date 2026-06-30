@@ -210,7 +210,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['bottom']}
+        edges={['top']}
       >
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center' }]}>
@@ -282,7 +282,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
-        edges={['bottom']}
+        edges={['top']}
       >
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center' }]}>
@@ -350,7 +350,7 @@ export const StarterSelectionScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['bottom']}
+      edges={['top']}
     >
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center' }]}>
