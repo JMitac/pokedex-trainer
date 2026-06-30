@@ -2,27 +2,24 @@
  * @file TrainerCardScreen.tsx
  * @layer Features / Trainer / Screens
  *
- * Carnet del entrenador con foto de perfil editable y lema.
- * El ícono de lápiz solo aparece cuando el entrenador está registrado.
+ * Carnet del entrenador con foto, lema y Pokémon inicial.
  */
 
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '@/app/providers/ThemeContext';
 import { useTrainerStore } from '../store/trainerStore';
 import { ProfilePhoto } from '../components/ProfilePhoto';
+import { StarterCard } from '../components/StarterCard';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Badge } from '@/ui/components/Badge';
 import { Button } from '@/ui/components/Button';
 import { Card } from '@/ui/components/Card';
-import { Heading, Body, Label, Caption } from '@/ui/components/Typography';
-import { colors, spacing, borderRadius } from '@/ui/tokens';
+import { Label, Caption } from '@/ui/components/Typography';
+import { textStyles, spacing, borderRadius } from '@/ui/tokens';
 import type { PokemonType } from '@/ui/tokens';
 import type { TrainerNavigationProp } from '@/app/navigation';
-
-// ---------------------------------------------------------------------------
-// Mapa tipo favorito → PokemonType
-// ---------------------------------------------------------------------------
 
 const TYPE_MAP: Record<string, PokemonType> = {
   Fuego: 'fire',
@@ -30,56 +27,33 @@ const TYPE_MAP: Record<string, PokemonType> = {
   Planta: 'grass',
 };
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
-
 type Props = TrainerNavigationProp<'TrainerCard'>;
 
-// ---------------------------------------------------------------------------
-// Componente
-// ---------------------------------------------------------------------------
-
 export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
-  const trainer = useTrainerStore((state) => state.trainer);
-  const profilePhotoUri = useTrainerStore((state) => state.profilePhotoUri);
-  const saveProfilePhoto = useTrainerStore((state) => state.saveProfilePhoto);
-  const resetTrainer = useTrainerStore((state) => state.resetTrainer);
+  const { colors } = useTheme();
+  const trainer = useTrainerStore((s) => s.trainer);
+  const profilePhotoUri = useTrainerStore((s) => s.profilePhotoUri);
+  const starterPokemon = useTrainerStore((s) => s.starterPokemon);
+  const saveProfilePhoto = useTrainerStore((s) => s.saveProfilePhoto);
+  const resetTrainer = useTrainerStore((s) => s.resetTrainer);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // ---------------------------------------------------------------------------
-  // Handlers
-  // ---------------------------------------------------------------------------
-
   const handleEdit = () => navigation.navigate('Step1PersonalData');
-
   const handleDeleteConfirm = () => {
     setShowDeleteModal(false);
     resetTrainer();
     navigation.navigate('Step1PersonalData');
   };
 
-  // ---------------------------------------------------------------------------
-  // Guard: sin datos
-  // ---------------------------------------------------------------------------
-
   if (!trainer) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
         <View style={styles.centered} testID="card-no-data">
-          <Heading size="md" align="center" color="textSecondary">
+          <Text style={[textStyles.headingSM, { color: colors.textSecondary, textAlign: 'center' }]}>
             No hay datos de entrenador
-          </Heading>
-          <Body align="center" color="textMuted" style={styles.noDataText}>
-            Completa el formulario de registro primero.
-          </Body>
-          <Button
-            label="Registrarme"
-            variant="primary"
-            onPress={handleEdit}
-            testID="btn-go-to-form"
-          />
+          </Text>
+          <Button label="Registrarme" variant="primary" onPress={handleEdit} testID="btn-go-to-form" style={{ marginTop: spacing.xl }} />
         </View>
       </SafeAreaView>
     );
@@ -87,31 +61,22 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
 
   const pokemonType = TYPE_MAP[trainer.favoritePokemonType];
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
-
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        testID="trainer-card-scroll"
-      >
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} testID="trainer-card-scroll">
+
         {/* Encabezado */}
         <View style={styles.headerSection}>
-          <Heading size="xl" align="center" testID="card-title">
+          <Text style={[textStyles.headingLG, { color: colors.textPrimary, textAlign: 'center' }]} testID="card-title">
             Carnet de Entrenador
-          </Heading>
-          <Caption align="center" color="textMuted">
-            Pokédex Trainer App
-          </Caption>
+          </Text>
+          <Caption color="textMuted" align="center">Pokédex Trainer App</Caption>
         </View>
 
         {/* Tarjeta principal */}
         <Card variant="elevated" style={styles.card} testID="trainer-card">
 
-          {/* Foto de perfil con lápiz */}
+          {/* Foto de perfil */}
           <View style={styles.photoSection}>
             <ProfilePhoto
               photoUri={profilePhotoUri}
@@ -119,39 +84,26 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
               onPhotoSelected={saveProfilePhoto}
               testID="profile-photo"
             />
-
-            {/* Badge de entrenador */}
-            <Badge
-              label="ENTRENADOR POKÉMON"
-              variant="success"
-              size="sm"
-              style={styles.registeredBadge}
-              testID="registered-badge"
-            />
+            <Badge label="ENTRENADOR POKÉMON" variant="success" size="sm" style={styles.registeredBadge} testID="registered-badge" />
           </View>
 
           <Card.Body>
             {/* Nombre */}
             <View style={styles.dataRow} testID="card-fullname-row">
               <Label color="textSecondary" style={styles.dataLabel}>Nombre</Label>
-              <Body style={styles.dataValue} testID="card-fullname">
+              <Text style={[textStyles.bodyMD, { color: colors.textPrimary, flex: 2, textAlign: 'right' }]} testID="card-fullname">
                 {trainer.fullName}
-              </Body>
+              </Text>
             </View>
-
             <View style={styles.divider} />
 
-            {/* Lema — solo si existe */}
+            {/* Lema */}
             {trainer.motto ? (
               <>
                 <View style={styles.mottoRow} testID="card-motto-row">
-                  <Caption
-                    color="textSecondary"
-                    style={styles.mottoText}
-                    testID="card-motto"
-                  >
+                  <Text style={[textStyles.bodyMD, { color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center' }]} testID="card-motto">
                     "{trainer.motto}"
-                  </Caption>
+                  </Text>
                 </View>
                 <View style={styles.divider} />
               </>
@@ -160,39 +112,33 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
             {/* Edad */}
             <View style={styles.dataRow} testID="card-age-row">
               <Label color="textSecondary" style={styles.dataLabel}>Edad</Label>
-              <Body testID="card-age">{trainer.age} años</Body>
+              <Text style={[textStyles.bodyMD, { color: colors.textPrimary }]} testID="card-age">
+                {trainer.age} años
+              </Text>
             </View>
-
             <View style={styles.divider} />
 
             {/* Email */}
             <View style={styles.dataRow} testID="card-email-row">
               <Label color="textSecondary" style={styles.dataLabel}>Correo</Label>
-              <Body
-                size="sm"
-                numberOfLines={1}
-                testID="card-email"
-                style={styles.dataValue}
-              >
+              <Text style={[textStyles.bodyMD, { color: colors.textPrimary, flex: 2, textAlign: 'right' }]} numberOfLines={1} testID="card-email">
                 {trainer.email}
-              </Body>
+              </Text>
             </View>
-
             <View style={styles.divider} />
 
             {/* Distrito */}
             <View style={styles.dataRow} testID="card-district-row">
               <Label color="textSecondary" style={styles.dataLabel}>Distrito</Label>
-              <Body testID="card-district">{trainer.district}</Body>
+              <Text style={[textStyles.bodyMD, { color: colors.textPrimary }]} testID="card-district">
+                {trainer.district}
+              </Text>
             </View>
-
             <View style={styles.divider} />
 
             {/* Tipo favorito */}
             <View style={styles.dataRow} testID="card-type-row">
-              <Label color="textSecondary" style={styles.dataLabel}>
-                Tipo favorito
-              </Label>
+              <Label color="textSecondary" style={styles.dataLabel}>Tipo favorito</Label>
               <Badge
                 label={trainer.favoritePokemonType}
                 variant="pokemon"
@@ -204,28 +150,20 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
           </Card.Body>
         </Card>
 
+        {/* Card del Pokémon Inicial */}
+        <StarterCard
+          starter={starterPokemon}
+          onChooseStarter={() => navigation.navigate('StarterSelection')}
+          testID="starter-section"
+        />
+
         {/* Acciones */}
         <View style={styles.actions}>
-          <Button
-            label="Editar perfil"
-            variant="secondary"
-            fullWidth
-            onPress={handleEdit}
-            accessibilityHint="Actualiza tus datos de entrenador"
-            testID="btn-edit-trainer"
-          />
-          <Button
-            label="Eliminar registro"
-            variant="danger"
-            fullWidth
-            onPress={() => setShowDeleteModal(true)}
-            accessibilityHint="Elimina permanentemente tu carnet de entrenador"
-            testID="btn-delete-trainer"
-          />
+          <Button label="Editar perfil" variant="secondary" fullWidth onPress={handleEdit} testID="btn-edit-trainer" />
+          <Button label="Eliminar registro" variant="danger" fullWidth onPress={() => setShowDeleteModal(true)} testID="btn-delete-trainer" />
         </View>
       </ScrollView>
 
-      {/* Modal de confirmación */}
       <ConfirmModal
         visible={showDeleteModal}
         title="¿Eliminar tu carnet?"
@@ -241,73 +179,17 @@ export const TrainerCardScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-// ---------------------------------------------------------------------------
-// Estilos
-// ---------------------------------------------------------------------------
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xxl,
-  },
-  headerSection: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-    gap: spacing.xxs,
-  },
-  card: {
-    marginBottom: spacing.md,
-  },
-  photoSection: {
-    alignItems: 'center',
-    marginBottom: spacing.lg,
-    gap: spacing.xs,
-  },
-  registeredBadge: {
-    alignSelf: 'center',
-  },
-  mottoRow: {
-    paddingVertical: spacing.xs,
-    alignItems: 'center',
-  },
-  mottoText: {
-    fontStyle: 'italic',
-    textAlign: 'center',
-    color: colors.textSecondary,
-  },
-  dataRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  dataLabel: {
-    flex: 1,
-  },
-  dataValue: {
-    flex: 2,
-    textAlign: 'right',
-  },
-  divider: {
-    height: 0.5,
-    backgroundColor: colors.border,
-  },
-  actions: {
-    gap: spacing.xs,
-    marginTop: spacing.xs,
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  noDataText: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.xl,
-  },
+  container: { flex: 1 },
+  scrollContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.xxl },
+  headerSection: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xxs },
+  card: { marginBottom: spacing.xs },
+  photoSection: { alignItems: 'center', marginBottom: spacing.lg, gap: spacing.xs },
+  registeredBadge: { alignSelf: 'center' },
+  mottoRow: { paddingVertical: spacing.xs, alignItems: 'center' },
+  dataRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs },
+  dataLabel: { flex: 1 },
+  divider: { height: 0.5, backgroundColor: '#00000020' },
+  actions: { gap: spacing.xs, marginTop: spacing.sm },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
 });

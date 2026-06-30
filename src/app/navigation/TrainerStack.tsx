@@ -2,8 +2,7 @@
  * @file TrainerStack.tsx
  * @layer App / Navigation
  *
- * Stack navigator para el flujo del Trainer.
- * Maneja el formulario multi-paso y la pantalla de carnet.
+ * Stack navigator del Trainer con pantalla de selección de starter.
  */
 
 import React from 'react';
@@ -14,6 +13,7 @@ import type { TrainerStackParamList } from './types';
 import { Step1PersonalData } from '@/features/trainer/screens/Step1PersonalData';
 import { Step2Preferences } from '@/features/trainer/screens/Step2Preferences';
 import { TrainerCardScreen } from '@/features/trainer/screens/TrainerCardScreen';
+import { StarterSelectionScreen } from '@/features/trainer/screens/StarterSelectionScreen';
 
 const Stack = createNativeStackNavigator<TrainerStackParamList>();
 
@@ -21,18 +21,14 @@ export const TrainerStack: React.FC = () => (
   <Stack.Navigator
     initialRouteName="Step1PersonalData"
     screenOptions={{
-      headerStyle: {
-        backgroundColor: colors.surface,
-      },
+      headerStyle: { backgroundColor: colors.surface },
       headerTitleStyle: {
         ...textStyles.headingSM,
         color: colors.textPrimary,
       },
       headerTintColor: colors.primary,
       headerShadowVisible: false,
-      contentStyle: {
-        backgroundColor: colors.background,
-      },
+      contentStyle: { backgroundColor: colors.background },
       animation: 'slide_from_right',
     }}
   >
@@ -41,25 +37,27 @@ export const TrainerStack: React.FC = () => (
       component={Step1PersonalData}
       options={{
         title: 'Datos Personales',
-        headerLeft: () => null, // No permite volver al paso anterior desde el paso 1
+        headerLeft: () => null,
       }}
     />
     <Stack.Screen
       name="Step2Preferences"
       component={Step2Preferences}
-      options={{
-        title: 'Preferencias',
-        headerBackTitle: 'Atrás',
-      }}
+      options={{ title: 'Preferencias', headerBackTitle: 'Atrás' }}
     />
     <Stack.Screen
       name="TrainerCard"
       component={TrainerCardScreen}
       options={{
         title: 'Mi Carnet',
-        headerLeft: () => null, // No permite volver desde el carnet
-        gestureEnabled: false,  // Deshabilita swipe back
+        headerLeft: () => null,
+        gestureEnabled: false,
       }}
+    />
+    <Stack.Screen
+      name="StarterSelection"
+      component={StarterSelectionScreen}
+      options={{ title: 'Pokémon Inicial', headerBackTitle: 'Volver' }}
     />
   </Stack.Navigator>
 );
