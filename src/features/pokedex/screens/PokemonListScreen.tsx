@@ -4,6 +4,14 @@
  *
  * Lista de Pokémon con búsqueda, filtros por tipo y diseño retro.
  * Los tipos se muestran en todas las cards gracias al mapa de tipos.
+ *
+ * IMPORTANTE — Espaciado inferior:
+ * El SafeAreaView usa edges={['top']} únicamente. El TabNavigator ya
+ * calcula el padding inferior real del dispositivo con
+ * useSafeAreaInsets() y se lo aplica al tab bar — por eso NO se debe
+ * agregar padding inferior extra grande aquí. listContent solo necesita
+ * un margen pequeño (spacing.sm) para que la última card no quede
+ * pegada justo al borde del tab bar, nada más.
  */
 
 import React, { useCallback, useState } from 'react';
@@ -399,7 +407,11 @@ export const PokemonListScreen: React.FC<Props> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  listContent: { paddingBottom: spacing.xxl },
+  // Antes: spacing.xxl (mucho) — ahora spacing.sm, suficiente para que
+  // la última card respire sin generar el hueco grande visto en iOS.
+  // El tab bar ya tiene su propio padding calculado con safe area real.
+  //listContent: { paddingBottom: spacing.xxl },
+  listContent: { paddingBottom: spacing.sm },
   centered: {
     flex: 1,
     alignItems: 'center',
