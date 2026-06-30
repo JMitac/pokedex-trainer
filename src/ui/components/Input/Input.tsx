@@ -26,7 +26,7 @@ import {
   spacing,
   borderRadius,
   borderWidth,
-  textStyles,
+  //textStyles,
   fontSize,
 } from '@/ui/tokens';
 import { Typography, Label, Caption } from '@/ui/components/Typography';
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    ...textStyles.bodyLG,
+    fontSize: fontSize.lg,
     color: colors.textPrimary,
     // iOS: sin padding vertical, el centrado lo hace el contenedor con
     // height fijo + alignItems: 'center'. Agregar paddingVertical aquí
