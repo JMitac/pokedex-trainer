@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   // la última card respire sin generar el hueco grande visto en iOS.
   // El tab bar ya tiene su propio padding calculado con safe area real.
   //listContent: { paddingBottom: spacing.xxl },
-  listContent: { paddingBottom: spacing.sm },
+  listContent: { paddingBottom: spacing.none },
   centered: {
     flex: 1,
     alignItems: 'center',
